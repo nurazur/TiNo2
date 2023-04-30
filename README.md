@@ -4,20 +4,20 @@
 ![](https://github.com/nurazur/TiNo/blob/master/matchbox.jpg)
 
 "**TI**ny **NO**de": battery powered wireless sensor or wireless actor.
-This is the second generation of TiNo. There are numerous technical improvements, mainly more flash memory and reduction of power consumption. The antenna is now accommodated on the PCB.
-The targets are still the same:
+This is the second generation of TiNo. There are numerous technical improvements, mainly more flash memory and further reduction of power consumption. The antenna is now accommodated on the PCB. The project is based on Microchip Avr0 series processors (here the Atmega3208 or atmega4808).
+
+The key points are still the same:
 
 - low cost
-- very small size (matchbox)
+- very small size (smaller than a matchbox)
 - ultra low sleep current
 - long battery life time: 5 years and more on a CR2032 cell
 - long range (what ever this means :-), but its realy long)
-- even simpler to build up
+- (even) simple(r) to build up
 - communication security
 - Plug&Play Firmware
 
-Sensors can be almost any, like temperature, relative humidity, air pressure, altitude meter, light intensity, UV Index,
-movement detectors, Reed switches, etc. However sensors have to be specified to work down to 2.2V. Otherwise the charge of the battery can not be fully used.
+Sensors can be almost any, like temperature, relative humidity, air pressure, altitude meter, light intensity, UV Index, movement detectors, Reed switches, etc. However sensors have to be specified to work down to 2.2V. Otherwise the charge of the battery can not be fully used.
 
 PCBs fit into low cost PVC boxes with the size of a matchbox that are readily available on the market.  
 
