@@ -31,11 +31,7 @@ PassWord = b"TheQuickBrownFox"
 
 monitor_mode = False
 
-##########       EEPROM MAPPING      ##########
-ADR_NUM_ACTIONS = 128
-ADR_ACTIONS = ADR_NUM_ACTIONS + 1
-MAX_NUM_ACTIONS = 40
-EEPROM_SIZE = 320
+
 
 ##########      Terminal Funktions - OS dependent       #########
 
@@ -183,7 +179,7 @@ pciconfig=["TRIGGER","MODE"]
 pciconfig_val =[0,0,0,0]
 
 
-# copy from C++ ENUM
+# 
 mem_s = "NODEIDB, NETWORKIDB, GATEWAYIDB, \
       VCCATCALi, VCCADC_CALi, \
       SENDDELAYi, \
@@ -235,7 +231,7 @@ mem={} #dictionary
 memtypes={}
 
 mem_l = mem_s.split(',') # string converted to list
-
+sizeof_config=0
 idx =0
 for item in mem_l:
     k = item.strip()
@@ -251,7 +247,8 @@ for item in mem_l:
         idx = idx+4
     else:
         idx = idx + 1
-
+     
+        
 #for index, item in enumerate(mem_l):
 #    mem[item.strip()[:-1]] = index
 
@@ -260,6 +257,14 @@ for item in mem_l:
 
 #for key in mem.keys():
 #    print (key, mem[key], memtypes[key])
+
+##########       EEPROM MAPPING      ##########
+ADR_NUM_ACTIONS = idx
+ADR_ACTIONS = ADR_NUM_ACTIONS + 1
+MAX_NUM_ACTIONS = 40
+EEPROM_SIZE = 320
+print("ADR_NUM_ACTIONS: %i" %(ADR_NUM_ACTIONS))  
+print("ADR_ACTIONS: %i" %(ADR_ACTIONS))  
 
 
 def write_eeprom_frequency_correction(serial):
@@ -834,7 +839,7 @@ def read_actions():
             else: #onoff == 3:
                 mode = "PULSE"
                 p = (int(recstr) & 0x7C)>>2
-                p = pow(2,p-1)
+                p = pow(2,p)/8.0
                 pulsdur = ", %.1f seconds" % p
 
             print("OnOff: %s (%s%s)" % (recstr[:-2].decode(), mode, pulsdur))
