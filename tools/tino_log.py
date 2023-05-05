@@ -108,11 +108,11 @@ else:
         return False
 
 
-       
+#key must be a bytes array
 def extract_data(key, results):
     key_result_pair =''
     if key in results.keys():
-        key_result_pair = ",%s,%s" % (key , str(results[key]))
+        key_result_pair = ",%s,%s" % (key.decode() , results[key].decode())
     return key_result_pair
 
 
@@ -124,7 +124,7 @@ def write_logfile(logfilename, msg):
         logfile.close()
     except IOError as e:
         print(e)
-    
+
 def record_filename(loctime):
     #th_week = int ( time.strftime('%W', loctime) ) + 1
     iso = datetime.date.fromtimestamp(time.time()).isocalendar()
@@ -143,8 +143,8 @@ def ftp_upload(filename, host, user, password, dest_dir):
     ftp.quit()
     return msg
 
-    
-    
+
+
 #### Main Program begins here ####
 last_log_dict= {}
 node = 'none'
@@ -198,16 +198,17 @@ while (True):
     else:
         time.sleep(0.05)
         continue
-        
+
     line = line_raw[:-2]
     #print line
     loctime = time.localtime(time.time())
     zeit = time.strftime('%a,%d.%m.%Y,%H:%M:%S', loctime)
     is_a_valid_packet = True
-    
-    node =''
-    
-    lst  = line.split(",")
+
+    node =b''
+
+    lst  = line.split(b",")
+    #print(lst)
     # old style message format
     if len(lst) > 3:
         node = lst[1]
@@ -215,7 +216,7 @@ while (True):
         if len(token) > 1:
             rssi = float(token[1])
         else: # protocol error
-            print (line)
+            print (line.decode())
             continue
         #msg = lst[3].split(':')[1]
         msg = lst[3].split(':')
@@ -226,17 +227,17 @@ while (True):
             continue
         res_str = "%s,n,%s,s,%.1f" % (zeit, node, rssi)
         if len(lst) >4:
-            feistr = lst[4].split('=')
+            feistr = lst[4].split(b'=')
             if len(feistr) > 1:
                 fei = int(feistr[1])
                 res_str = res_str + ",a,%i" % (fei)
             else:
                 pass
-                
+
         payload = msg.split(';')[:-1] # strip off the last ''
         datalen = len(payload)
-        
-        
+
+
         if "OK" in payload[0]:
             is_a_valid_packet = True
             if datalen > 1:
@@ -256,68 +257,69 @@ while (True):
                 res_str = "%s,f,%x" % (res_str, flags)
         else:
             is_a_valid_packet = False
-            
 
-        if int(node) in list_of_nodes:  
+
+        if int(node) in list_of_nodes:
             last_log_dict[node] = res_str
             last_log = open(tmp_verzeichnis + last_log_filename,'w')
             for key in last_log_dict:
                 last_log.write(last_log_dict[key] + '\n')
             last_log.close()
-            #ftp_upload(fn, '192.168.0.16', 'pi', 'andreas', '/var/tmp')   
+            #ftp_upload(fn, '192.168.0.16', 'pi', 'andreas', '/var/tmp')
 
 
 
 
-    #TiNo 2.0 and later   
-    else: 
+    #TiNo 2.0 and later
+    else:
         try:
-            lst = line.split(' ')
+            lst = line.split(b' ')
             if len(lst) >1:
-                node=lst[0]
-                items = lst[1].split('&')
+                node=lst[0].decode()
+                items = lst[1].split(b'&')
                 results.clear()
                 for param in items:
-                    param_value_Pair = param.split('=')
+                    param_value_Pair = param.split(b'=')
                     #print param_value_Pair
                     if len(param_value_Pair) >1:
                         results[param_value_Pair[0]] = param_value_Pair[1]
-                
+
                 #res_str = "%s,n,%s,s,%.1f"    % (zeit, node, float(results['rssi'])/10)
-                
+
                 res_str = "%s,n,%s"    % (zeit, node)
-                
-                if 'rssi' in results.keys():
-                    res_str += ",s,%.1f" % (float(results['rssi'])/10)
+                #print (results.keys())
+                if b'rssi' in results.keys():
+                    res_str += ",s,%.1f" % (float(results[b'rssi'])/10)
                 else:
                     res_str  += ",s,"
-                    
+
                 fei_str=''
-                if 'fo' in results.keys():
-                    fei_str = ',a,' + results['fo']
-                    
-                if 'f' in results.keys():
-                    flags = int(results['f'],16)
+                if b'fo' in results.keys():
+                    fei_str = ',a,' + results[b'fo']
+
+                if b'f' in results.keys():
+                    flags = int(results[b'f'],16)
                 else:
                     is_a_valid_packet = False
-                    print(line)
+                    print (line.decode())
+                    #print("line is a invalid packet")
                     continue # string does not contain a flag byte ==> invalid
-                    
-                hum_str = ''
-                if 'h' in results.keys():
-                    hum = float(results['h'])/100.0
+
+                hum_str = b''
+                if b'h' in results.keys():
+                    hum = float(results[b'h'])/100.0
                     hum_str = ",h,%.1f" %(hum)
-                res_str = "%s%s%s%s%s%s%s%s" % (res_str, 
+                res_str = "%s%s%s%s%s%s%s%s" % (res_str,
                 fei_str,
-                #extract_data('fo', results),
-                extract_data('v', results),
-                extract_data('c', results),
-                extract_data('t', results),
+                #extract_data(b'fo', results),
+                extract_data(b'v', results),
+                extract_data(b'c', results),
+                extract_data(b't', results),
                 hum_str,
-                #extract_data('h', results),
-                extract_data('p', results),
-                extract_data('f', results))
-                
+                #extract_data(b'h', results),
+                extract_data(b'p', results),
+                extract_data(b'f', results))
+
                 if int(node) in list_of_nodes:
                     last_log_dict[node] = res_str
                     last_log = open(tmp_verzeichnis + last_log_filename,'w')
@@ -326,21 +328,21 @@ while (True):
                     last_log.close()
         except:
             is_a_valid_packet = False
-            print(line)
-            #print (sys.exc_info())
+            print(line.decode())
+            print (sys.exc_info())
             continue
-                
+
 
     if node is not '':
-        if int(node) > 0: 
+        if int(node) > 0:
             print (res_str)
-        
+
         if int(node) in list_of_nodes and is_a_valid_packet:
-            print (line_raw)
+            print (line_raw.decode())
             write_logfile(record_filename(loctime), res_str)
         elif int(node) > 0:
             write_logfile(tmp_verzeichnis + errorlogfile, res_str)
 
-    
 
-    
+
+
