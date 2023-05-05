@@ -38,12 +38,12 @@
 // the RF protocol is completely binary, see https://github.com/nurazur/tino
 
 
-#define SKETCHNAME "TiNo2 receive.ino Ver 30/04/2023"
+#define SKETCHNAME "TiNo2 receive.ino Ver 03/05/2023"
 #define BUILD 10
 
 
 #include <avr/sleep.h>
-//#include <HardwareSerial.h>
+
 #define SERIAL_BAUD 230400
 #define SERIAL_SWAP     0
 HardwareSerial *mySerial = &Serial;
@@ -63,17 +63,20 @@ HardwareSerial *mySerial = &Serial;
 
 #include <EEPROM.h>
 #include "calibrate.h"
-
+#include "SHTSensor.h"
 #define KEY  "TheQuickBrownFox"
+
 
 /*****************************************************************************/
 /***                       Actions Struct                                  ***/
 /*****************************************************************************/
 typedef struct {
-  uint8_t node;      // the node to trigger
-  uint8_t port;      // the port to trigger
-  uint8_t mask;      // to which bit of the flag byte it is mapped
-  uint8_t onoff;    // type of action:  OFF (00) ON(01) TOGGLE (10) PULSE (11); Pulse length = 2^B, where B = bits [23456], B= (action[i] >>2) &0xf, C = default on power up, C = bit[7] 1= on, 0 = off
+  uint8_t node;             // the node to trigger on (the node from which the signal comes)
+  uint8_t pin;             // the pin to trigger
+  uint8_t mask;
+  uint8_t mode:2;           //type of action:  OFF (00) ON(01) TOGGLE (10) PULSE (11)
+  uint8_t duration:5;       //  Pulse length = 2^duration 
+  uint8_t default_val:1;    //default on power up, 1= on, 0 = off
 } action;
 
 /*****************************************************************************/
@@ -111,6 +114,15 @@ Configuration config;
 myMAC Mac(radio, config, (uint8_t*) KEY, mySerial);
 Calibration CalMode(config, mySerial, &Mac, BUILD, (uint8_t*) KEY);
 
+/******                   Periodic Interrupt Timer and RTC setup         *****/
+#include "pitctrl.h"
+PITControl PIT;
+
+ISR(RTC_PIT_vect) 
+{
+    PIT.interrupthandler();
+}
+
 
 /*****************************************************************************/
 /***                       Actions                                         ***/
@@ -119,82 +131,186 @@ Calibration CalMode(config, mySerial, &Mac, BUILD, (uint8_t*) KEY);
 #define ADR_ACTIONS   ADR_NUM_ACTIONS + 1
 #define MAX_NUM_ACTIONS 40
 
+#define ON 1
+#define OFF 0
+#define TOGGLE 2
+#define PULSE 3
+
+
+/* Globals */
 action *actions;
 uint8_t num_actions;
+
 /*
-if action.node is equal to this node, then the flag word in the telegram is evaluated.
-4 flags can be set (bits 1 to bit 4 in the flag byte). Each flag is mapped to a port using the mask byte.
-the port is defined in the port[i] array (up to 4 different ports for the four flags)
-Actions are: ON, OFF, TOGGLE Port, PULSE with length 2^B * 0.5 seconds.
+if action.node is equal to the node in the received frame, then the flag word in the frame is evaluated.
+4 flags can be set (bits 1 to bit 4 in the flag byte). Each flag can be mapped to a pin using the mask byte.
+The pin is defined in the pin[i] array (up to 4 different pins for the four flags)
+Actions are: ON, OFF, TOGGLE pin, PULSE with length 2^B * 0.125 seconds.
 
-Example: Node 15,  Port 7 shall turn on on flag 02, port 7 shall turn off on flag 04. Port 8 shall be toggled on flag 0x08, Port 5 shall be pulsed for 2 seconds on flag 0x10
+Example: Node 15,  pin 7 shall turn on on flag 02, pin 7 shall turn off on flag 04. pin 8 shall be toggled on flag 0x08, pin 5 shall be pulsed for 2 seconds on flag 0x10
 
 node = 15;
-port = 7;
+pin = 7;
 mask = 0x02;
-onoff = 0x1;
+mode = 0x1; //ON
+duration =0; // doesn't matter
+default_val=0; (off is default)
 
 node = 15;
-port = 7;
+pin = 7;
 mask = 0x04;
-onoff = 0x0;
+mode = 0x0; //OFF
+duration =0; // doesn't matter
+default_val=0; (off is default)
 
 node = 15;
-port = 8;
+pin = 8;
 mask = 0x08;
-onoff = 0x10;
+mode = 0x10; // TOGGLE
+duration =0; // doesn't matter
+default_val=0; (off is default)
 
 node = 15;
-port = 5;
+pin = 5;
 mask = 0x10;
-onoff = 0x3 | (0x02 << 2); // B=2, 2^B = 4 * 0.5s = 2s
+mode = 0x3
+duration = 0x2 B=2, 2^B = 4 * 0.125s = 0.5s
+default_val=0; (off is default)
 */
 
-unsigned char pulse_port=0;  // the port for which a pulse is defined and active.
-unsigned int pulse_duration=0; // counter
 
-void doaction (uint8_t nodeid, uint8_t flags, action actions[], uint8_t num_actions)
+void doaction (uint8_t nodeid, uint8_t flags, action actions[], uint8_t num_actions, PITControl* Pit);
+
+void doaction (uint8_t nodeid, uint8_t flags, action actions[], uint8_t num_actions, PITControl* Pit)
 {
     for (uint8_t i=0; i< num_actions; i++)
     {
         if(actions[i].node == nodeid) // nodeid matches the actions's nodeId
         {
-            if (actions[i].mask & flags ) // the action's trigger bit is set
+            if (actions[i].mask & flags ) // the action's trigger bit(s) is set
             {
-                uint8_t act = actions[i].onoff &0x3; // Action mode
-                switch (act)
+                switch (actions[i].mode)// Action mode
                 {
-                    case 0:     // OFF
-                        digitalWrite(actions[i].port, 0);
+                    case OFF:     // OFF
+                        digitalWrite(actions[i].pin, 0);
                         break;
-                    case 1:     // ON
-                        digitalWrite(actions[i].port, 1);
+                    case ON:     // ON
+                        digitalWrite(actions[i].pin, 1);
                         break;
-                    case 2:     // Toggle
-                        digitalWrite(actions[i].port, !digitalRead(actions[i].port));
+                    case TOGGLE:     // Toggle
+                        digitalWrite(actions[i].pin, !digitalRead(actions[i].pin));
                         break;
-                    case 3:     //Pulse
-                        digitalWrite(actions[i].port, 1);
-                        pulse_port = actions[i].port;
-
-                        uint8_t exp = (actions[i].onoff>>2) &0x7F;
-
-                        if (exp <= 4) // less than or equal 8 seconds
-                        {
-                            pulse_duration  =1;
-                            //setup_watchdog(5+exp);
-                        }
-                        else // more than  8s
-                        {
-                            pulse_duration = pow(2,exp-4);
-                            //setup_watchdog(9); //8s
-                        }
+                    case PULSE:     //Pulse
+                        digitalWrite(actions[i].pin, !actions[i].default_val);
+                        uint16_t dur = 1<<actions[i].duration;
+                        dur++;
+                        PIT.start(actions[i].pin, actions[i].default_val, dur);
                         break;
                 }
             }
         }
     }
 }
+
+
+/*****************************************************************************/
+/***              SHT3x and SHTC3  Humidity Sensor                         ***/
+/*****************************************************************************/
+
+
+SHTSensor *SHT3X=NULL;
+SHTSensor *SHTC3=NULL;
+SHTSensor *SHT4X=NULL;
+
+uint8_t SHT_Measure(bool enabled, SHTSensor *SHT, float &temperature, float &humidity)
+{
+    uint8_t success=0;
+    if (enabled && SHT)
+    {   
+        //mySerial->print("now read sht\n");
+        //pinMode(config.I2CPowerPin, OUTPUT);
+        digitalWrite(config.I2CPowerPin, HIGH);
+        Wire.begin(); // ?? brauchts des?
+        
+        delay(1);
+        SHT->init();
+        
+        if (SHT->readSample()) 
+        {
+            temperature = SHT->getTemperature();
+            humidity    = SHT->getHumidity();
+            print_humidity_sensor_values("SHT", temperature, humidity);
+            success =  0x48; // according to SHT3X and SHTC3 bit in UseBits
+        }
+        else 
+        {
+            mySerial->print("Error in readSample()\n");
+        }
+        //digitalWrite(config.I2CPowerPin, LOW);
+        //I2C_shutdown(); not required on receiver
+    }
+    return success;
+}
+
+
+static bool SHTC3_Init(UseBits &enable)
+{
+    if (enable.SHTC3)
+    {
+        SHTC3 = new SHTSensor(SHTSensor::SHTC3);
+        mySerial->print("SHTC3: ");
+        enable.SHTC3 = SHTC3->init();
+        if (enable.SHTC3) 
+        {
+            mySerial->print("init(): success\n");
+        } 
+        else 
+        {
+            mySerial->print("init(): failed\n");
+        }
+    }
+    return enable.SHTC3;
+}
+
+static bool SHT3X_Init(UseBits &enable)
+{
+    if (enable.SHT3X)
+    {      
+        SHT3X = new SHTSensor(SHTSensor::SHT3X);
+        mySerial->print("SHT3x: ");
+        enable.SHT3X = SHT3X->init();
+        if (enable.SHT3X) 
+        {
+            mySerial->print("init(): success\n");
+        } 
+        else 
+        {
+            mySerial->print("init(): failed\n");
+        }
+    }
+   return enable.SHT3X;
+}
+
+static bool SHT4X_Init(UseBits &enable)
+{
+    if (enable.SHT4X)
+    {      
+        SHT4X = new SHTSensor(SHTSensor::SHT4X);
+        mySerial->print("SHT5x: ");
+        enable.SHT4X = SHT4X->init();
+        if (enable.SHT4X) 
+        {
+            mySerial->print("init(): success\n");
+        } 
+        else 
+        {
+            mySerial->print("init(): failed\n");
+        }
+    }
+   return enable.SHT4X;
+}
+
+
 
 /*****************************************************************************/
 /***              HTU21D  Humidity Sensor                                  ***/
@@ -207,8 +323,9 @@ static bool HTU21D_Init(UseBits &enable)
     if (enable.HTU21D)
     {
         myHTU21D = new HTU21D(HTU21D_RES_RH12_TEMP14);
-        mySerial->print("HTU21D: ");
+        mySerial->print("HTU21D: ");mySerial->flush();
         enable.HTU21D = myHTU21D->begin();
+        //mySerial->print("HTU21D: debug message");mySerial->flush();
         if (enable.HTU21D)
         {
             mySerial->print("init(): success\n");
@@ -239,48 +356,11 @@ uint8_t HTU21D_Measure(bool enabled, float &temperature, float &humidity)
             success=0x1;
         }
         //digitalWrite(config.I2CPowerPin, LOW);
-        //I2C_shutdown();
+        //I2C_shutdown(); // not required in receiver sketch
     }
     return success;
 }
 
-
-
-
-/*
-void setup_watchdog(int timerPrescaler)
-{
-    if (timerPrescaler > 9 ) timerPrescaler = 9; //Correct incoming amount if need be
-    byte bb = timerPrescaler & 7;
-    if (timerPrescaler > 7) bb |= (1<<5); //Set the special 5th bit if necessary
-    //This order of commands is important and cannot be combined
-    MCUSR &= ~(1<<WDRF); //Clear the watchdog reset
-    WDTCSR |= (1<<WDCE) | (1<<WDE); //Set WD_change enable, set WD enable
-    WDTCSR = bb; //Set new watchdog timeout value
-    WDTCSR |= _BV(WDIE); //Set the interrupt enable, this will keep unit from resetting after each int
-}
-
-void stop_watchdog(void)
-{
-    noInterrupts();
-    //This order of commands is important and cannot be combined
-    MCUSR &= ~(1<<WDRF); //Clear the watchdog reset
-    WDTCSR |= (1<<WDCE) | (1<<WDE); //Set WD_change enable, set WD enable
-    WDTCSR = 0; //Set new watchdog timeout value
-    interrupts();
-}
-
-ISR(WDT_vect)
-{
-    pulse_duration--;
-    if (pulse_duration == 0)
-    {
-        if (pulse_port >0) digitalWrite(pulse_port, 0);
-        pulse_port = 0;
-        stop_watchdog();
-    }
-}
-*/
 
 
 
@@ -294,11 +374,8 @@ uint8_t event_triggered = 0;
 
 // ISR for the Pin change Interrupt
 void wakeUp0() { event_triggered |= 0x1; }
-
 void wakeUp1() { event_triggered |= 0x2; }
-
 void wakeUp2() { event_triggered |= 0x4; }
-
 void wakeUp3() { event_triggered |= 0x8; }
 
 
@@ -334,8 +411,6 @@ void activityLed (unsigned char state, unsigned int time = 0)
 /*****************************************************************************/
 /***                   READ VCC                                            ***/
 /*****************************************************************************/
-
-/***   READ VCC ***/
 
 long Vcal_x_ADCcal = 1500L * 1023L;
 #define SAMPLE_ACCUMULATION 0x5
@@ -429,6 +504,8 @@ void setBit(int index, byte value)
 /**********************************************************************/
 /*      Rolling Code implementation                                   */
 /**********************************************************************/
+// Rolling Code is not supported due to limited EEPROM space.
+// I am looking for a solution.
 /*
 #define TOLERANCE 10
 
@@ -475,7 +552,50 @@ static bool rolling_code_is_valid(byte nodeid, byte count_new)
     return packet_is_valid;
 }
 */
-/**********************************************************************/
+/*****************************************************************************/
+/****                        SIGROW                                       ****/
+/*****************************************************************************/
+// Serial Number consists of 10 Bytes.
+// The first 6 Bytes are printable characters.
+// the last 4 Bystes are the actual serial number.
+
+typedef struct 
+{
+    char prefix[7];
+    union
+    {
+        uint8_t sn_char[4];
+        uint32_t sn;
+    };
+} SerialNumber;
+
+
+ 
+void print_serial_number()
+{
+    SerialNumber SN;
+    uint8_t* sernum_addr = (uint8_t*)&SIGROW.SERNUM0;
+    int i;
+    for (i=0; i<6; i++)
+    {
+        SN.prefix[i] = (char) *sernum_addr;
+        sernum_addr++;
+    }
+    SN.prefix[6]=0;
+   
+    for (i=0; i<4; i++)
+    {
+        SN.sn_char[i] = *sernum_addr;
+        sernum_addr++;
+    }
+
+    Serial.print("Serial Number: ");
+    //Serial.printf(" %0.10li\r\n", SN.sn); // printf kostet mich 1.5 kByte
+    Serial.print(SN.prefix); Serial.print(" "); Serial.println(SN.sn);
+}
+/*****************************************************************************/
+
+
 
 unsigned long MeasurementIntervall_ms;
 unsigned long last_measurement_millis=0; 
@@ -507,10 +627,19 @@ void setup()
     /***                     ***/
     CalMode.configure();
 
+    print_serial_number();
+    
+    /***********************************************************/
+    // normal initialization starts here
+    // Dont load eeprom data here, it is done in the configuration (boot) routine. EEPROM is encrypted.
+    
     MeasurementIntervall_ms = config.Senddelay *8000L; // senddelay = Intervall in ms to measure Temp and adjust Radio Frequency
        
     Vcal_x_ADCcal = (long)config.VccAtCalmV * config.AdcCalValue;
     
+    
+    // this is an attempt to implement basic frequency hopping.
+    // due to synthesizer settle times, some frames may be lost
     #if NUM_CHANNELS >1 
     frec[0]= config.frequency;
     frec[1]= 866.0;
@@ -518,9 +647,12 @@ void setup()
     frec[3]= 868.0;
     #endif
     
+    /*********************************************************/
     /*************  INITIALIZE ACTOR MODULE ******************/
+    /*********************************************************/
     EEPROM.get(ADR_NUM_ACTIONS, num_actions);
 
+    //mySerial->print("size of Config: "); mySerial->println(sizeof(Configuration)); mySerial->flush();
 
     if (num_actions > 0 && num_actions <= MAX_NUM_ACTIONS)
     {
@@ -538,23 +670,40 @@ void setup()
         EEPROM.get(ADR_ACTIONS + i*sizeof(action), actions[i]);
     }
 
-    // verify the checksum
-    uint16_t cs_from_eeprom;
-    EEPROM.get(ADR_ACTIONS + MAX_NUM_ACTIONS * sizeof(action), cs_from_eeprom);
-    uint16_t cs_from_data = CalMode.checksum_crc16((uint8_t*) actions, sizeof(action) * num_actions);
-
-    if ((cs_from_eeprom ^ cs_from_data) != 0)
+    if (num_actions > 0)
     {
-        mySerial->println("Checksum incorrect for Actions.");
-        num_actions =0;
-    }
+        // verify the checksum
+        uint16_t cs_from_eeprom;
+        EEPROM.get(ADR_ACTIONS + MAX_NUM_ACTIONS * sizeof(action), cs_from_eeprom);
+        uint16_t cs_from_data = CalMode.checksum_crc16((uint8_t*) actions, sizeof(action) * num_actions);
 
-    for(int i=0; i< num_actions; i++)
-    {
-        pinMode(actions[i].port, OUTPUT);
-        digitalWrite(actions[i].port, actions[i].onoff>>7);
-    }
+        if ((cs_from_eeprom ^ cs_from_data) != 0)
+        {
+            mySerial->println("Checksum incorrect for Actions.");
+            num_actions =0;
+        }
 
+        /*
+        for(int i=0; i< num_actions; i++)
+        {
+            pinMode(actions[i].pin, OUTPUT);
+            digitalWrite(actions[i].pin, actions[i].default_val);
+            
+            Serial.print("\nnode :"); Serial.println(actions[i].node);
+            Serial.print("mask :"); Serial.println(actions[i].mask);
+            Serial.print("pin :"); Serial.println(actions[i].pin);
+            Serial.print("dur. :"); Serial.println(actions[i].duration);
+            Serial.print("mode :"); Serial.println(actions[i].mode);
+            Serial.print("def. :"); Serial.println(actions[i].default_val);
+        }
+        */
+    }
+    
+    //for (int j=0; j <=15; j++)
+    //{Serial.print(j); Serial.print(" "); Serial.print(int(pow(1.982864, j)));Serial.print(" "); Serial.println(int(pow(1.982864, j))*0.125,3); }
+    /*********************************************************/
+    PIT.init();
+    PIT.disable();
     
     /************************************/
     /***     Pin Change Interrupts    ***/
@@ -604,9 +753,7 @@ void setup()
         pinMode(config.PCI3Pin, config.PCI3Mode);
         register_pci(3, config.PCI3Pin, wakeUp3, config.PCI3Trigger);
     }
-    /***********************************************************/
-    // normal initialization starts here
-    // Dont load eeprom data here, it is done in the configuration (boot) routine. EEPROM is encrypted.
+
 
     
     /* start i2c bus */
@@ -616,17 +763,11 @@ void setup()
     
     UseBits* u;
     u = (UseBits*)&config.SensorConfig;
-    
+    Wire.swap(0);
+    Wire.begin(); 
     HTU21D_Init(*u);
-    
-    /*
-    digitalWrite(config.I2CPowerPin, LOW);
-    if (USE_I2C_PULLUPS)
-    {
-        pinMode(config.SDAPin, INPUT);
-        pinMode(config.SCLPin, INPUT);
-    }
-    */
+    SHT3X_Init(*u);
+    SHTC3_Init(*u);
     
      /***  INITIALIZE RADIO MODULE ***/
     mySerial->print("RF Chip = "); config.IsRFM69HW ?    mySerial->print("RFM69HCW") : mySerial->print("RFM69CW");  mySerial->println();
@@ -658,7 +799,7 @@ void loop()
             // find out which protocol format is used
             if (!(Mac.rxpacket.payload[FLAGS] & 0x60)) // bit 5 and bit 6 in Flags are 0, flags is x00x xxxx
             {
-                // This is the standard protocol for TiNo Sensors / Actors, good for HTU21D, SHT2x, SHT3x, 1 DS18B20 or BME280 plus an LDR
+                // This is the standard protocol for TiNo Sensors / Actors, good for HTU21D, SHT2x, SHT3x, SHTC3, SHT4x1 DS18B20 or BME280 plus an LDR
                 Payload *pl = (Payload*) Mac.rxpacket.payload;
                 
                 mySerial->print("v=");  mySerial->print(pl->supplyV);
@@ -673,17 +814,18 @@ void loop()
                     mySerial->print("&br=");  mySerial->print(pl->brightness);
                 }
                 
-                //extract_interrupts(pl->flags);
-                /*
-                bool rolling_code_ok = rolling_code_is_valid(pl->nodeid, pl->count);
-
-                if (Mac.rxpacket.errorcode >=0 && rolling_code_ok)
+                extract_interrupts(pl->flags);
+                
+                //bool rolling_code_ok = rolling_code_is_valid(pl->nodeid, pl->count);
+                Serial.flush();
+                //if (Mac.rxpacket.errorcode >=0 && rolling_code_ok)
+                if (Mac.rxpacket.errorcode >=0)
                 {
-                    doaction(Mac.rxpacket.payload[NODEID], Mac.rxpacket.payload[FLAGS], actions, num_actions);
+                    doaction(Mac.rxpacket.payload[NODEID], Mac.rxpacket.payload[FLAGS], actions, num_actions, &PIT);
                 }
-                mySerial->print("&sy=");
-                rolling_code_ok ? mySerial->print("1") : mySerial->print("0") ;
-                */
+                //mySerial->print("&sy=");
+                //rolling_code_ok ? mySerial->print("1") : mySerial->print("0") ;
+                
             }
 
             else if ((Mac.rxpacket.payload[FLAGS] >> 5) == 0x2) // TiNo ACK Packet: 010x xxxx
@@ -796,11 +938,11 @@ void loop()
         }
         else if (Mac.rxpacket.errorcode<0)
         {
-         /* Errorcodes:
-             -1:  could not decode FEC data (too many bit errors in codes)
-             -2:  data length does not match
-             -3:  not my message or address corrupted
-         */
+             /* Errorcodes:
+                 -1:  could not decode FEC data (too many bit errors in codes)
+                 -2:  data length does not match
+                 -3:  not my message or address corrupted
+             */
              /*
             char errors[3];
             errors[0] = "-1: could not decode FEC data (too many bit errors in codes)";
@@ -810,39 +952,25 @@ void loop()
             
             mySerial->print("Error Code: "); mySerial->print(errors[code]);
             */
-            if (Mac.rxpacket.errorcode ==-1)
-            {
-                mySerial->print("Error Code: ");mySerial->print(Mac.rxpacket.errorcode);
-                mySerial->print(" NodeId,"); mySerial->print(Mac.rxpacket.payload[NODEID],DEC);
-                mySerial->print(",s=");     mySerial->print(Mac.rxpacket.RSSI); mySerial->println();
-            }
-        
         }
     }
+    
+    /***  Frequency hopping ***/
     #if NUM_CHANNELS > 1
     if(radio.noRx())
     {
         frec_counter++;
         if (frec_counter >= NUM_CHANNELS) frec_counter=0;
-        //radio.setFrequencyMHz(frec[frec_counter]); 
         radio.switch_frequencyMHz(frec[frec_counter]); 
-        delayMicroseconds(100);
+        delayMicroseconds(100); // wait for the synthesizer to settle.
     }
     #endif
     
-    if (event_triggered) // a local Port change interrupt occured.
-    {
-        //mySerial->print("Event triggered: "); mySerial->print(event_triggered);
-        //mySerial->print(", Nodeid: "); mySerial->print(config.Nodeid);
-        //mySerial->println();
-
-        doaction(config.Nodeid, event_triggered, actions, num_actions);
-        event_triggered =0;
-    }
     
-    if (MeasurementIntervall_ms >0) // local measurement 
+    
+    if (MeasurementIntervall_ms > 0) // local measurement 
     {
-        if (millis() > last_measurement_millis)
+        if ((millis() > last_measurement_millis) || event_triggered)
         {
             last_measurement_millis = millis() + MeasurementIntervall_ms;
             
@@ -851,29 +979,50 @@ void loop()
             UseBits *u;
             u = (UseBits*)&config.SensorConfig;
             
-            if (!HTU21D_Measure(u->HTU21D, t, h))
+            
+            uint8_t success =0;
+            success |=  HTU21D_Measure(u->HTU21D, t,h);
+            success |= SHT_Measure(u->SHT3X, SHT3X, t, h);
+            success |= SHT_Measure(u->SHTC3, SHTC3, t, h);
+            if (!success)
             {
                 t = radio.readTemperature(0) + config.radio_temp_offset/10.0;
-                //mySerial->println("it is not possible to measure with HTU21D");
             }
-            
+        
             mySerial->print(config.Nodeid); mySerial->print(" ");
             mySerial->print("v=");   mySerial->print((uint16_t)getVcc(Vcal_x_ADCcal));
             mySerial->print("&c=");  mySerial->print(++count);
             mySerial->print("&t=");  mySerial->print(t*100,0);
             mySerial->print("&h=");  mySerial->print(h*100,0);
-            mySerial->print("&f=1"); // heartbeat
+            mySerial->print("&f=");
+            if (event_triggered)
+            {
+                mySerial->print(event_triggered <<1);
+            }
+            else
+                mySerial->print("1"); // heartbeat
             
             // adjust radio frequencuy according to FT table, if applicable
-            //mySerial->println("Temperature Measurement and Frequency Tuning.");
+            // in Atmega4808 the FT table is not availabe from eeprom.
+            // mySerial->println("Temperature Measurement and Frequency Tuning.");
+            /*
             if (config.UseRadioFrequencyCompensation)
             {
                 int fo_steps = config.FedvSteps - Mac.radio_calc_temp_correction(t);
                 radio.setFrequency((config.frequency * 1000000)/radio.FSTEP + fo_steps );
                 mySerial->print("&fo=");  mySerial->print((int)(fo_steps*radio.FSTEP));
             }
+            */
+            
+            
             mySerial->println();
         }
+    }
+    
+    if (event_triggered) // a local Port change interrupt occured.
+    {
+        doaction(config.Nodeid, event_triggered, actions, num_actions, &PIT);
+        event_triggered =0;
     }
 }
 
