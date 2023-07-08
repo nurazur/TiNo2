@@ -1,5 +1,5 @@
 # TiNo2
-[German Version](https://github.com/nurazur/TiNo/blob/master/LIESMICH.md)
+[German Version](https://github.com/nurazur/TiNo2/blob/master/LIESMICH.md)
 
 ![](https://github.com/nurazur/TiNo/blob/master/matchbox.jpg)
 
@@ -21,8 +21,14 @@ Sensors can be almost any, like temperature, relative humidity, air pressure, al
 
 PCBs fit into low cost PVC boxes with the size of a matchbox that are readily available on the market.  
 
-
 # Features
+## new Features
+- internal ceramic antenna
+- support for Sensirion humidity sensors SHT4x series
+- Microchip CPU Atmega4808 with configurable custom logic, event system and many technical improvements compared to Atmega328P
+- 48kB Flash memory (instead of 32kB) allowing one single firmware build for all supported sensors.
+- UPDI programming interface (instead of ISP)
+
 ## General
 - Voltage from ca. 1.8V to 3.6V
 - Operates with a CR2032 cell up to 5 years
@@ -32,7 +38,7 @@ PCBs fit into low cost PVC boxes with the size of a matchbox that are readily av
 - HTU21D
 - SHT21, SHT20, SHT25
 - SHT30, SHT31, SHT35
-- SHTC3
+- SHTC3 (new)
 - SHT40, SHT41, SHT43, SHT45
 - BME280 (air pressure sensor)
 - DS18B20 (ubiquitous temperature sensor)
@@ -44,14 +50,14 @@ PCBs fit into low cost PVC boxes with the size of a matchbox that are readily av
 - enough analog GPIO's
 
 ## Radio
-- RFM69CW, RFM69HCW, RFM95 Module
+- RFM69HCW, RFM95 Module
 - bidirectional communication
 - ISM Band (Europe: 433MHz / 868MHz, US:315MHz / 915Mhz)
 - 2GFSK Modulation
 - Center frequency adjustable
 - Frequency correction can be calibrated
-- Transmit power from -18 dBm to 20dBm, 10 dBm typ.
-- Link budget up to 120dB
+- Transmit power from -2 dBm to 20dBm, 10 dBm typ.
+- Link budget up to 125dB
 - sensitivity -105 dBm typ.
 - looong range
 - RF communication encrypted
@@ -79,3 +85,39 @@ PCBs fit into low cost PVC boxes with the size of a matchbox that are readily av
   - using UPDI Interface
   - serial with SerialUPDI Adapter and Bootloader
 - up to 4 external interrupts (i.e. push buttons) can be configured
+
+# How To Install
+1. Install MegaCoreX
+2. Install TiNo2 libraries
+
+## Installation of  MegaCoreX via Boards Manager
+* Open Arduino IDE.
+* Open the **File > Preferences** menu item.
+* Enter the following URL in **Additional Boards Manager URLs**:
+    ```
+    https://mcudude.github.io/MegaCoreX/package_MCUdude_MegaCoreX_index.json
+    ```
+* Separate the URLs using a comma ( **,** ) if you have more than one URL
+* Open the **Tools > Board > Boards Manager...** menu item.
+* Wait for the platform indexes to finish downloading.
+* Scroll down until you see the **MegaCoreX** entry and click on it.
+* Click **Install**.
+* After installation is complete close the **Boards Manager** window.
+
+## MegacoreX Manual Installation
+Click on the "Download ZIP" button. Extract the ZIP file, and move the extracted folder to the location "**~/Documents/Arduino/hardware**". Create the "hardware" folder if it doesn't exist.
+Open Arduino IDE and a new category in the boards menu called "MegaCoreX" will show up.
+
+## Install TiNo2 package
+* Open Arduino IDE.
+* Open the **File > Preferences** menu item.
+* Enter the following URL in **Additional Boards Manager URLs**:
+    ```
+    https://raw.githubusercontent.com/nurazur/TiNo2/master/package_nurazur_TiNo2_index.json
+    ```
+* Separate the URLs using a comma ( **,** ) if you have more than one URL
+* Open the **Tools > Board > Boards Manager...** menu item.
+* Wait for the platform indexes to finish downloading.
+* Scroll down until you see the **nurazur TiNo2 Boards** entry and click on it.
+* Click **Install**.
+* After installation is complete, close the **Boards Manager** window.
