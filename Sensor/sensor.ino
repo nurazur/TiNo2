@@ -355,7 +355,7 @@ static bool SHT4X_Init(UseBits &enable)
     if (enable.SHT4X)
     {      
         SHT4X = new SHTSensor(SHTSensor::SHT4X);
-        mySerial->print("SHT5x: ");
+        mySerial->print("SHT4x: ");
         enable.SHT4X = SHT4X->init();
         if (enable.SHT4X) 
         {
