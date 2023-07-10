@@ -768,6 +768,7 @@ void setup()
     HTU21D_Init(*u);
     SHT3X_Init(*u);
     SHTC3_Init(*u);
+    SHT4X_Init(*u);
     
      /***  INITIALIZE RADIO MODULE ***/
     mySerial->print("RF Chip = "); config.IsRFM69HW ?    mySerial->print("RFM69HCW") : mySerial->print("RFM69CW");  mySerial->println();
@@ -984,6 +985,7 @@ void loop()
             success |=  HTU21D_Measure(u->HTU21D, t,h);
             success |= SHT_Measure(u->SHT3X, SHT3X, t, h);
             success |= SHT_Measure(u->SHTC3, SHTC3, t, h);
+            success |= SHT_Measure(u->SHT4X, SHT4X, t, h);
             if (!success)
             {
                 t = radio.readTemperature(0) + config.radio_temp_offset/10.0;

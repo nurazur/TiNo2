@@ -1330,6 +1330,7 @@ void loop()
         success |=  HTU21D_Measure(TiNo->use.HTU21D, temperature, humidity);
         success |= SHT_Measure(TiNo->use.SHT3X, SHT3X, temperature, humidity);
         success |= SHT_Measure(TiNo->use.SHTC3, SHTC3, temperature, humidity);
+        success |= SHT_Measure(TiNo->use.SHT4X, SHT4X, temperature, humidity);
         if(TiNo->use.BME280)
         {
             float pressure;
