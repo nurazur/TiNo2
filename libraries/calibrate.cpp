@@ -39,6 +39,7 @@ extern long  readVcc();
 extern void activityLed (unsigned char state, unsigned int time=0);
 
 
+#include <Arduino.h>
 #include <EEPROM.h>
 #include "datalinklayer.h"
 #include "calibrate.h"
