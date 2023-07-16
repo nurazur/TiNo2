@@ -120,7 +120,7 @@ def crc16(data):
 def read_raw(port):
     raw_line=""
     if port.inWaiting() > 0:
-        time.sleep(0.05)
+        #time.sleep(0.05)
         if not monitor_mode:
             raw_line = port.read(port.inWaiting())
             if b'\r\n' not in raw_line[-2:]:
@@ -131,7 +131,7 @@ def read_raw(port):
                         raw_line += port.read(port.inWaiting())
                         if b'\r\n' in raw_line[-2:]: done = True
                     else:
-                        time.sleep(.01)
+                        time.sleep(.001)
                     if time.time() - ts > 1:
                         print("rx timeout")
                         break;
