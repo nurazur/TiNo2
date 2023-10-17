@@ -8,16 +8,17 @@ This is the 2nd generation of TiNo. There are numerous technical improvements, m
 
 The key points are still the same:
 
+- simplicity
 - low cost
 - very small size (smaller than a matchbox)
 - ultra low sleep current
 - long battery life time: 5 years and more on a CR2032 cell
-- long range (what ever this means :-), but its realy long)
+- long range (100m +)
 - (even) simple(r) to build up
 - communication security
 - Plug&Play Firmware
 
-Sensors can be almost any, like temperature, relative humidity, air pressure, altitude meter, light intensity, UV Index, movement detectors, Reed switches, etc. However sensors have to be specified to work down to 2.2V. Otherwise the charge of the battery can not be fully used.
+Sensors can be almost any, like temperature, relative humidity, air pressure, altitude meter, light intensity, UV Index, movement detectors (PIR), Reed switches, etc. However sensors have to be specified to work down to 2.2V. Otherwise the charge of the battery can not be fully used.
 
 PCBs fit into low cost PVC boxes with the size of a matchbox that are readily available on the market.  
 
