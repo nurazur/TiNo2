@@ -1,5 +1,5 @@
 # TiNo
-![](https://github.com/nurazur/TiNo/blob/master/TiNo_Logo4.png)![](https://github.com/nurazur/TiNo/blob/master/matchbox.jpg)
+![](https://github.com/nurazur/TiNo2/blob/master/Tino2_logo.png)
 
 ## Hinweis aus aktuellem Anlass
 Der Master-Branch ist als Entwicklungsbranch gedacht, die Verwendung, auch einzelner Dateien, ist auf eigenes Risiko. Die Releases sind jedoch gründlich getetstet. Doch auch hier gilt: ich übernehme keine Garantie dass die Software frei von Fehlern ist.
