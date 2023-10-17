@@ -121,3 +121,5 @@ Open Arduino IDE and a new category in the boards menu called "MegaCoreX" will s
 * Scroll down until you see the **nurazur TiNo2 Boards** entry and click on it.
 * Click **Install**.
 * After installation is complete, close the **Boards Manager** window.
+
+#Burning a Bootloader

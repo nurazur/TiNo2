@@ -1,0 +1,1188 @@
+menu.clock=Clock
+menu.BOD=BOD
+menu.eeprom=EEPROM
+menu.pinout=Pinout
+menu.resetpin=Reset pin
+menu.bootloader=Bootloader
+
+###################################
+#### TiNo2 Sender (ATMEGA 4808)####
+###################################
+
+# General
+TiNo2_Sender.name=TiNo2 (Atmega4808)
+TiNo2_Sender.upload.tool=MegaCoreX:avrdude
+TiNo2_Sender.upload.maximum_data_size=6144
+TiNo2_Sender.upload.speed=115200
+TiNo2_Sender.bootloader.tool=MegaCoreX:avrdude
+TiNo2_Sender.build.core=MegaCoreX:coreX-corefiles
+TiNo2_Sender.build.board=AVR_ATmega4808
+TiNo2_Sender.build.mcu=atmega4808
+TiNo2_Sender.build.extra_flags={build.oscillator}
+TiNo2_Sender.build.variant=32pin-standard
+
+# Fuses we don't need to modify in the tools menu
+TiNo2_Sender.bootloader.WDTCFG=0x00
+TiNo2_Sender.bootloader.TCD0CFG=0x00
+TiNo2_Sender.bootloader.SYSCFG1=0x06
+TiNo2_Sender.bootloader.APPEND=0x00
+TiNo2_Sender.bootloader.LOCKBIT=0xC5
+
+# EEPROM
+TiNo2_Sender.menu.eeprom.keep=EEPROM retained
+TiNo2_Sender.menu.eeprom.keep.bootloader.eesave_bit=1
+TiNo2_Sender.menu.eeprom.erase=EEPROM not retained
+TiNo2_Sender.menu.eeprom.erase.bootloader.eesave_bit=0
+TiNo2_Sender.bootloader.SYSCFG0=0b1100100{bootloader.eesave_bit}
+
+# Brown out detection
+TiNo2_Sender.menu.BOD.disabled=BOD disabled
+TiNo2_Sender.menu.BOD.disabled.bootloader.BODCFG=0x00
+TiNo2_Sender.menu.BOD.1v8=BOD 1.8V
+TiNo2_Sender.menu.BOD.1v8.bootloader.BODCFG=0x14
+TiNo2_Sender.menu.BOD.2v6=BOD 2.6V
+TiNo2_Sender.menu.BOD.2v6.bootloader.BODCFG=0x54
+TiNo2_Sender.menu.BOD.4v3=BOD 4.3V
+TiNo2_Sender.menu.BOD.4v3.bootloader.BODCFG=0xF4
+#TiNo2_Sender.menu.BOD.4v0=BOD 4.0V
+#TiNo2_Sender.menu.BOD.4v0.bootloader.BODCFG=0xD4
+#TiNo2_Sender.menu.BOD.3v7=BOD 3.7V
+#TiNo2_Sender.menu.BOD.3v7.bootloader.BODCFG=0xB4
+#TiNo2_Sender.menu.BOD.3v3=BOD 3.3V
+#TiNo2_Sender.menu.BOD.3v3.bootloader.BODCFG=0x94
+#TiNo2_Sender.menu.BOD.2v9=BOD 2.9V
+#TiNo2_Sender.menu.BOD.2v9.bootloader.BODCFG=0x74
+#TiNo2_Sender.menu.BOD.2v1=BOD 2.1V
+#TiNo2_Sender.menu.BOD.2v1.bootloader.BODCFG=0x34
+
+
+
+# Clock
+TiNo2_Sender.menu.clock.internal_4MHz=Internal 4 MHz
+TiNo2_Sender.menu.clock.internal_4MHz.upload.speed=115200
+TiNo2_Sender.menu.clock.internal_4MHz.bootloader.OSCCFG=0x01
+TiNo2_Sender.menu.clock.internal_4MHz.build.oscillator=
+TiNo2_Sender.menu.clock.internal_4MHz.build.f_cpu=4000000L
+
+TiNo2_Sender.menu.clock.internal_1MHz=Internal 1 MHz
+TiNo2_Sender.menu.clock.internal_1MHz.upload.speed=115200
+TiNo2_Sender.menu.clock.internal_1MHz.bootloader.OSCCFG=0x01
+TiNo2_Sender.menu.clock.internal_1MHz.build.oscillator=
+TiNo2_Sender.menu.clock.internal_1MHz.build.f_cpu=1000000L
+
+
+TiNo2_Sender.menu.clock.internal_2MHz=Internal 2 MHz
+TiNo2_Sender.menu.clock.internal_2MHz.upload.speed=115200
+TiNo2_Sender.menu.clock.internal_2MHz.bootloader.OSCCFG=0x01
+TiNo2_Sender.menu.clock.internal_2MHz.build.oscillator=
+TiNo2_Sender.menu.clock.internal_2MHz.build.f_cpu=2000000L
+
+
+TiNo2_Sender.menu.clock.internal_8MHz=Internal 8 MHz
+TiNo2_Sender.menu.clock.internal_8MHz.upload.speed=115200
+TiNo2_Sender.menu.clock.internal_8MHz.bootloader.OSCCFG=0x01
+TiNo2_Sender.menu.clock.internal_8MHz.build.oscillator=
+TiNo2_Sender.menu.clock.internal_8MHz.build.f_cpu=8000000L
+
+TiNo2_Sender.menu.clock.internal_16MHz=Internal 16 MHz
+TiNo2_Sender.menu.clock.internal_16MHz.upload.speed=115200
+TiNo2_Sender.menu.clock.internal_16MHz.bootloader.OSCCFG=0x01
+TiNo2_Sender.menu.clock.internal_16MHz.build.oscillator=
+TiNo2_Sender.menu.clock.internal_16MHz.build.f_cpu=16000000L
+
+
+
+# Bootloader
+TiNo2_Sender.menu.bootloader.uart0_default=Yes, UART0 default pins
+TiNo2_Sender.menu.bootloader.uart0_default.upload.maximum_size=48640
+TiNo2_Sender.menu.bootloader.uart0_default.upload.protocol=arduino
+TiNo2_Sender.menu.bootloader.uart0_default.upload.port=UART0_DEF
+TiNo2_Sender.menu.bootloader.uart0_default.upload.extra_params=
+TiNo2_Sender.menu.bootloader.uart0_default.build.text_section_start=.text=0x200
+TiNo2_Sender.menu.bootloader.uart0_default.build.export_merged_output=true
+TiNo2_Sender.menu.bootloader.uart0_default.bootloader.file=optiboot/bootloaders/mega0/{upload.speed}/Optiboot_mega0_{upload.port}_{upload.speed}_A7.hex
+TiNo2_Sender.menu.bootloader.uart0_default.bootloader.BOOTEND=0x02
+TiNo2_Sender.menu.bootloader.uart0_default.bootloader.SYSCFG0=0b1100100{bootloader.eesave_bit}
+
+TiNo2_Sender.menu.bootloader.no_bootloader=No
+TiNo2_Sender.menu.bootloader.no_bootloader.upload.maximum_size=49152
+TiNo2_Sender.menu.bootloader.no_bootloader.upload.extra_params=
+TiNo2_Sender.menu.bootloader.no_bootloader.build.text_section_start=.text=0x0
+TiNo2_Sender.menu.bootloader.no_bootloader.build.export_merged_output=false
+TiNo2_Sender.menu.bootloader.no_bootloader.bootloader.file=empty/empty.hex
+TiNo2_Sender.menu.bootloader.no_bootloader.bootloader.BOOTEND=0x00
+
+
+#########################################################
+#### TiNo2 Sender (ATMEGA 4808) Simple Configuration ####
+#########################################################
+
+# General
+TiNo2_Send_simple.name=TiNo2 Sender Standard Config
+TiNo2_Send_simple.upload.tool=MegaCoreX:avrdude
+TiNo2_Send_simple.upload.maximum_data_size=6144
+TiNo2_Send_simple.upload.speed=115200
+TiNo2_Send_simple.bootloader.tool=MegaCoreX:avrdude
+TiNo2_Send_simple.build.core=MegaCoreX:coreX-corefiles
+TiNo2_Send_simple.build.board=AVR_ATmega4808
+TiNo2_Send_simple.build.mcu=atmega4808
+TiNo2_Send_simple.build.extra_flags={build.oscillator}
+TiNo2_Send_simple.build.variant=32pin-standard
+
+# Fuses we don't need to modify in the tools menu
+TiNo2_Send_simple.bootloader.WDTCFG=0x00
+TiNo2_Send_simple.bootloader.TCD0CFG=0x00
+TiNo2_Send_simple.bootloader.SYSCFG1=0x06
+TiNo2_Send_simple.bootloader.APPEND=0x00
+TiNo2_Send_simple.bootloader.LOCKBIT=0xC5
+TiNo2_Send_simple.bootloader.SYSCFG0=0b11001001
+TiNo2_Send_simple.bootloader.BODCFG=0x00
+
+# EEPROM
+#TiNo2_Send_simple.menu.eeprom.keep=EEPROM retained
+#TiNo2_Send_simple.menu.eeprom.keep.bootloader.eesave_bit=1
+#TiNo2_Send_simple.menu.eeprom.erase=EEPROM not retained
+#TiNo2_Send_simple.menu.eeprom.erase.bootloader.eesave_bit=0
+#TiNo2_Send_simple.bootloader.SYSCFG0=0b1100100{bootloader.eesave_bit}
+
+# Brown out detection
+#TiNo2_Send_simple.menu.BOD.disabled=BOD disabled
+#TiNo2_Send_simple.menu.BOD.disabled.bootloader.BODCFG=0x00
+#TiNo2_Send_simple.menu.BOD.1v8=BOD 1.8V
+#TiNo2_Send_simple.menu.BOD.1v8.bootloader.BODCFG=0x14
+#TiNo2_Send_simple.menu.BOD.2v6=BOD 2.6V
+#TiNo2_Send_simple.menu.BOD.2v6.bootloader.BODCFG=0x54
+#TiNo2_Send_simple.menu.BOD.4v3=BOD 4.3V
+#TiNo2_Send_simple.menu.BOD.4v3.bootloader.BODCFG=0xF4
+#TiNo2_Send_simple.menu.BOD.4v0=BOD 4.0V
+#TiNo2_Send_simple.menu.BOD.4v0.bootloader.BODCFG=0xD4
+#TiNo2_Send_simple.menu.BOD.3v7=BOD 3.7V
+#TiNo2_Send_simple.menu.BOD.3v7.bootloader.BODCFG=0xB4
+#TiNo2_Send_simple.menu.BOD.3v3=BOD 3.3V
+#TiNo2_Send_simple.menu.BOD.3v3.bootloader.BODCFG=0x94
+#TiNo2_Send_simple.menu.BOD.2v9=BOD 2.9V
+#TiNo2_Send_simple.menu.BOD.2v9.bootloader.BODCFG=0x74
+#TiNo2_Send_simple.menu.BOD.2v1=BOD 2.1V
+#TiNo2_Send_simple.menu.BOD.2v1.bootloader.BODCFG=0x34
+
+
+
+# Clock
+TiNo2_Send_simple.menu.clock.internal_4MHz=Internal 4 MHz
+TiNo2_Send_simple.menu.clock.internal_4MHz.upload.speed=115200
+TiNo2_Send_simple.menu.clock.internal_4MHz.bootloader.OSCCFG=0x01
+TiNo2_Send_simple.menu.clock.internal_4MHz.build.oscillator=
+TiNo2_Send_simple.menu.clock.internal_4MHz.build.f_cpu=4000000L
+
+TiNo2_Send_simple.menu.clock.internal_1MHz=Internal 1 MHz
+TiNo2_Send_simple.menu.clock.internal_1MHz.upload.speed=115200
+TiNo2_Send_simple.menu.clock.internal_1MHz.bootloader.OSCCFG=0x01
+TiNo2_Send_simple.menu.clock.internal_1MHz.build.oscillator=
+TiNo2_Send_simple.menu.clock.internal_1MHz.build.f_cpu=1000000L
+
+
+#TiNo2_Send_simple.menu.clock.internal_2MHz=Internal 2 MHz
+#TiNo2_Send_simple.menu.clock.internal_2MHz.upload.speed=115200
+#TiNo2_Send_simple.menu.clock.internal_2MHz.bootloader.OSCCFG=0x01
+#TiNo2_Send_simple.menu.clock.internal_2MHz.build.oscillator=
+#TiNo2_Send_simple.menu.clock.internal_2MHz.build.f_cpu=2000000L
+
+
+#TiNo2_Send_simple.menu.clock.internal_8MHz=Internal 8 MHz
+#TiNo2_Send_simple.menu.clock.internal_8MHz.upload.speed=115200
+#TiNo2_Send_simple.menu.clock.internal_8MHz.bootloader.OSCCFG=0x01
+#TiNo2_Send_simple.menu.clock.internal_8MHz.build.oscillator=
+#TiNo2_Send_simple.menu.clock.internal_8MHz.build.f_cpu=8000000L
+
+#TiNo2_Send_simple.menu.clock.internal_16MHz=Internal 16 MHz
+#TiNo2_Send_simple.menu.clock.internal_16MHz.upload.speed=115200
+#TiNo2_Send_simple.menu.clock.internal_16MHz.bootloader.OSCCFG=0x01
+#TiNo2_Send_simple.menu.clock.internal_16MHz.build.oscillator=
+#TiNo2_Send_simple.menu.clock.internal_16MHz.build.f_cpu=16000000L
+
+
+
+# Bootloader
+TiNo2_Send_simple.menu.bootloader.uart0_default=Yes
+TiNo2_Send_simple.menu.bootloader.uart0_default.upload.maximum_size=48640
+TiNo2_Send_simple.menu.bootloader.uart0_default.upload.protocol=arduino
+TiNo2_Send_simple.menu.bootloader.uart0_default.upload.port=UART0_DEF
+TiNo2_Send_simple.menu.bootloader.uart0_default.upload.extra_params=
+TiNo2_Send_simple.menu.bootloader.uart0_default.build.text_section_start=.text=0x200
+TiNo2_Send_simple.menu.bootloader.uart0_default.build.export_merged_output=true
+TiNo2_Send_simple.menu.bootloader.uart0_default.bootloader.file=optiboot/bootloaders/mega0/{upload.speed}/Optiboot_mega0_{upload.port}_{upload.speed}_A7.hex
+TiNo2_Send_simple.menu.bootloader.uart0_default.bootloader.BOOTEND=0x02
+TiNo2_Send_simple.menu.bootloader.uart0_default.bootloader.SYSCFG0=0b11001001
+
+TiNo2_Send_simple.menu.bootloader.no_bootloader=No
+TiNo2_Send_simple.menu.bootloader.no_bootloader.upload.maximum_size=49152
+TiNo2_Send_simple.menu.bootloader.no_bootloader.upload.extra_params=
+TiNo2_Send_simple.menu.bootloader.no_bootloader.build.text_section_start=.text=0x0
+TiNo2_Send_simple.menu.bootloader.no_bootloader.build.export_merged_output=false
+TiNo2_Send_simple.menu.bootloader.no_bootloader.bootloader.file=empty/empty.hex
+TiNo2_Send_simple.menu.bootloader.no_bootloader.bootloader.BOOTEND=0x00
+
+
+#########################################################
+#### TiNo2 Receiver (ATMEGA 4808) Simple Configuration ####
+#########################################################
+
+# General
+TiNo2_recv_simple.name=TiNo2 Receiver
+TiNo2_recv_simple.upload.tool=MegaCoreX:avrdude
+TiNo2_recv_simple.upload.maximum_data_size=6144
+TiNo2_recv_simple.upload.speed=115200
+TiNo2_recv_simple.bootloader.tool=MegaCoreX:avrdude
+TiNo2_recv_simple.build.core=MegaCoreX:coreX-corefiles
+TiNo2_recv_simple.build.board=AVR_ATmega4808
+TiNo2_recv_simple.build.mcu=atmega4808
+TiNo2_recv_simple.build.extra_flags={build.oscillator}
+TiNo2_recv_simple.build.variant=32pin-standard
+
+# Fuses we don't need to modify in the tools menu
+TiNo2_recv_simple.bootloader.WDTCFG=0x00
+TiNo2_recv_simple.bootloader.TCD0CFG=0x00
+TiNo2_recv_simple.bootloader.SYSCFG1=0x06
+TiNo2_recv_simple.bootloader.APPEND=0x00
+TiNo2_recv_simple.bootloader.LOCKBIT=0xC5
+#TiNo2_recv_simple.bootloader.SYSCFG0=0b11001001
+TiNo2_recv_simple.bootloader.BODCFG=0x00
+
+# EEPROM
+TiNo2_recv_simple.menu.eeprom.keep=EEPROM retained
+TiNo2_recv_simple.menu.eeprom.keep.bootloader.eesave_bit=1
+TiNo2_recv_simple.menu.eeprom.erase=EEPROM not retained
+TiNo2_recv_simple.menu.eeprom.erase.bootloader.eesave_bit=0
+TiNo2_recv_simple.bootloader.SYSCFG0=0b1100100{bootloader.eesave_bit}
+
+# Brown out detection
+#TiNo2_recv_simple.menu.BOD.disabled=BOD disabled
+#TiNo2_recv_simple.menu.BOD.disabled.bootloader.BODCFG=0x00
+#TiNo2_recv_simple.menu.BOD.1v8=BOD 1.8V
+#TiNo2_recv_simple.menu.BOD.1v8.bootloader.BODCFG=0x14
+#TiNo2_recv_simple.menu.BOD.2v6=BOD 2.6V
+#TiNo2_recv_simple.menu.BOD.2v6.bootloader.BODCFG=0x54
+#TiNo2_recv_simple.menu.BOD.4v3=BOD 4.3V
+#TiNo2_recv_simple.menu.BOD.4v3.bootloader.BODCFG=0xF4
+#TiNo2_recv_simple.menu.BOD.4v0=BOD 4.0V
+#TiNo2_recv_simple.menu.BOD.4v0.bootloader.BODCFG=0xD4
+#TiNo2_recv_simple.menu.BOD.3v7=BOD 3.7V
+#TiNo2_recv_simple.menu.BOD.3v7.bootloader.BODCFG=0xB4
+#TiNo2_recv_simple.menu.BOD.3v3=BOD 3.3V
+#TiNo2_recv_simple.menu.BOD.3v3.bootloader.BODCFG=0x94
+#TiNo2_recv_simple.menu.BOD.2v9=BOD 2.9V
+#TiNo2_recv_simple.menu.BOD.2v9.bootloader.BODCFG=0x74
+#TiNo2_recv_simple.menu.BOD.2v1=BOD 2.1V
+#TiNo2_recv_simple.menu.BOD.2v1.bootloader.BODCFG=0x34
+
+
+
+# Clock
+#TiNo2_recv_simple.menu.clock.internal_4MHz=Internal 4 MHz
+#TiNo2_recv_simple.menu.clock.internal_4MHz.upload.speed=115200
+#TiNo2_recv_simple.menu.clock.internal_4MHz.bootloader.OSCCFG=0x01
+#TiNo2_recv_simple.menu.clock.internal_4MHz.build.oscillator=
+#TiNo2_recv_simple.menu.clock.internal_4MHz.build.f_cpu=4000000L
+
+#TiNo2_recv_simple.menu.clock.internal_1MHz=Internal 1 MHz
+#TiNo2_recv_simple.menu.clock.internal_1MHz.upload.speed=115200
+#TiNo2_recv_simple.menu.clock.internal_1MHz.bootloader.OSCCFG=0x01
+#TiNo2_recv_simple.menu.clock.internal_1MHz.build.oscillator=
+#TiNo2_recv_simple.menu.clock.internal_1MHz.build.f_cpu=1000000L
+
+
+#TiNo2_recv_simple.menu.clock.internal_2MHz=Internal 2 MHz
+#TiNo2_recv_simple.menu.clock.internal_2MHz.upload.speed=115200
+#TiNo2_recv_simple.menu.clock.internal_2MHz.bootloader.OSCCFG=0x01
+#TiNo2_recv_simple.menu.clock.internal_2MHz.build.oscillator=
+#TiNo2_recv_simple.menu.clock.internal_2MHz.build.f_cpu=2000000L
+
+
+#TiNo2_recv_simple.menu.clock.internal_8MHz=Internal 8 MHz
+#TiNo2_recv_simple.menu.clock.internal_8MHz.upload.speed=115200
+#TiNo2_recv_simple.menu.clock.internal_8MHz.bootloader.OSCCFG=0x01
+#TiNo2_recv_simple.menu.clock.internal_8MHz.build.oscillator=
+#TiNo2_recv_simple.menu.clock.internal_8MHz.build.f_cpu=8000000L
+
+TiNo2_recv_simple.menu.clock.internal_16MHz=Internal 16 MHz
+TiNo2_recv_simple.menu.clock.internal_16MHz.upload.speed=115200
+TiNo2_recv_simple.menu.clock.internal_16MHz.bootloader.OSCCFG=0x01
+TiNo2_recv_simple.menu.clock.internal_16MHz.build.oscillator=
+TiNo2_recv_simple.menu.clock.internal_16MHz.build.f_cpu=16000000L
+
+# Bootloader
+TiNo2_recv_simple.menu.bootloader.uart0_default=Yes
+TiNo2_recv_simple.menu.bootloader.uart0_default.upload.maximum_size=48640
+TiNo2_recv_simple.menu.bootloader.uart0_default.upload.protocol=arduino
+TiNo2_recv_simple.menu.bootloader.uart0_default.upload.port=UART0_DEF
+TiNo2_recv_simple.menu.bootloader.uart0_default.upload.extra_params=
+TiNo2_recv_simple.menu.bootloader.uart0_default.build.text_section_start=.text=0x200
+TiNo2_recv_simple.menu.bootloader.uart0_default.build.export_merged_output=true
+TiNo2_recv_simple.menu.bootloader.uart0_default.bootloader.file=optiboot/bootloaders/mega0/{upload.speed}/Optiboot_mega0_{upload.port}_{upload.speed}_A7.hex
+TiNo2_recv_simple.menu.bootloader.uart0_default.bootloader.BOOTEND=0x02
+TiNo2_recv_simple.menu.bootloader.uart0_default.bootloader.SYSCFG0=0b11001001
+
+TiNo2_recv_simple.menu.bootloader.no_bootloader=No
+TiNo2_recv_simple.menu.bootloader.no_bootloader.upload.maximum_size=49152
+TiNo2_recv_simple.menu.bootloader.no_bootloader.upload.extra_params=
+TiNo2_recv_simple.menu.bootloader.no_bootloader.build.text_section_start=.text=0x0
+TiNo2_recv_simple.menu.bootloader.no_bootloader.build.export_merged_output=false
+TiNo2_recv_simple.menu.bootloader.no_bootloader.bootloader.file=empty/empty.hex
+TiNo2_recv_simple.menu.bootloader.no_bootloader.bootloader.BOOTEND=0x00
+
+
+
+####################
+#### ATmega4808 ####
+####################
+
+# General
+4808.name=ATmega4808
+4808.upload.tool=avrdude
+4808.upload.maximum_data_size=6144
+4808.upload.speed=115200
+4808.bootloader.tool=MegaCoreX:avrdude
+4808.build.core=MegaCoreX:coreX-corefiles
+4808.build.board=AVR_ATmega4808
+4808.build.mcu=atmega4808
+4808.build.extra_flags={build.oscillator}
+
+# Fuses we don't need to modify in the tools menu
+4808.bootloader.WDTCFG=0x00
+4808.bootloader.TCD0CFG=0x00
+4808.bootloader.SYSCFG1=0x06
+4808.bootloader.APPEND=0x00
+4808.bootloader.LOCKBIT=0xC5
+
+# Pinouts
+4808.menu.pinout.32pin_standard=32 pin standard
+4808.menu.pinout.32pin_standard.build.variant=32pin-standard
+
+
+# EEPROM
+4808.menu.eeprom.keep=EEPROM retained
+4808.menu.eeprom.keep.bootloader.eesave_bit=1
+4808.menu.eeprom.erase=EEPROM not retained
+4808.menu.eeprom.erase.bootloader.eesave_bit=0
+
+# Reset pin
+4808.menu.resetpin.reset=Reset
+4808.menu.resetpin.reset.bootloader.SYSCFG0=0b1100100{bootloader.eesave_bit}
+4808.menu.resetpin.gpio=GPIO
+4808.menu.resetpin.gpio.bootloader.SYSCFG0=0b1100000{bootloader.eesave_bit}
+
+# Brown out detection
+4808.menu.BOD.2v6=BOD 2.6V
+4808.menu.BOD.2v6.bootloader.BODCFG=0x54
+4808.menu.BOD.4v3=BOD 4.3V
+4808.menu.BOD.4v3.bootloader.BODCFG=0xF4
+4808.menu.BOD.4v0=BOD 4.0V
+4808.menu.BOD.4v0.bootloader.BODCFG=0xD4
+4808.menu.BOD.3v7=BOD 3.7V
+4808.menu.BOD.3v7.bootloader.BODCFG=0xB4
+4808.menu.BOD.3v3=BOD 3.3V
+4808.menu.BOD.3v3.bootloader.BODCFG=0x94
+4808.menu.BOD.2v9=BOD 2.9V
+4808.menu.BOD.2v9.bootloader.BODCFG=0x74
+4808.menu.BOD.2v1=BOD 2.1V
+4808.menu.BOD.2v1.bootloader.BODCFG=0x34
+4808.menu.BOD.1v8=BOD 1.8V
+4808.menu.BOD.1v8.bootloader.BODCFG=0x14
+4808.menu.BOD.disabled=BOD disabled
+4808.menu.BOD.disabled.bootloader.BODCFG=0x00
+
+# Clock
+4808.menu.clock.internal_16MHz=Internal 16 MHz
+4808.menu.clock.internal_16MHz.upload.speed=115200
+4808.menu.clock.internal_16MHz.bootloader.OSCCFG=0x01
+4808.menu.clock.internal_16MHz.build.oscillator=
+4808.menu.clock.internal_16MHz.build.f_cpu=16000000L
+
+4808.menu.clock.internal_20MHz=Internal 20 MHz
+4808.menu.clock.internal_20MHz.upload.speed=115200
+4808.menu.clock.internal_20MHz.bootloader.OSCCFG=0x02
+4808.menu.clock.internal_20MHz.build.oscillator=
+4808.menu.clock.internal_20MHz.build.f_cpu=20000000L
+
+4808.menu.clock.internal_10MHz=Internal 10 MHz
+4808.menu.clock.internal_10MHz.upload.speed=115200
+4808.menu.clock.internal_10MHz.bootloader.OSCCFG=0x02
+4808.menu.clock.internal_10MHz.build.oscillator=
+4808.menu.clock.internal_10MHz.build.f_cpu=10000000L
+
+4808.menu.clock.internal_8MHz=Internal 8 MHz
+4808.menu.clock.internal_8MHz.upload.speed=115200
+4808.menu.clock.internal_8MHz.bootloader.OSCCFG=0x01
+4808.menu.clock.internal_8MHz.build.oscillator=
+4808.menu.clock.internal_8MHz.build.f_cpu=8000000L
+
+4808.menu.clock.internal_5MHz=Internal 5 MHz
+4808.menu.clock.internal_5MHz.upload.speed=115200
+4808.menu.clock.internal_5MHz.bootloader.OSCCFG=0x02
+4808.menu.clock.internal_5MHz.build.oscillator=
+4808.menu.clock.internal_5MHz.build.f_cpu=5000000L
+
+4808.menu.clock.internal_4MHz=Internal 4 MHz
+4808.menu.clock.internal_4MHz.upload.speed=115200
+4808.menu.clock.internal_4MHz.bootloader.OSCCFG=0x01
+4808.menu.clock.internal_4MHz.build.oscillator=
+4808.menu.clock.internal_4MHz.build.f_cpu=4000000L
+
+4808.menu.clock.internal_2MHz=Internal 2 MHz
+4808.menu.clock.internal_2MHz.upload.speed=115200
+4808.menu.clock.internal_2MHz.bootloader.OSCCFG=0x01
+4808.menu.clock.internal_2MHz.build.oscillator=
+4808.menu.clock.internal_2MHz.build.f_cpu=2000000L
+
+4808.menu.clock.internal_1MHz=Internal 1 MHz
+4808.menu.clock.internal_1MHz.upload.speed=115200
+4808.menu.clock.internal_1MHz.bootloader.OSCCFG=0x01
+4808.menu.clock.internal_1MHz.build.oscillator=
+4808.menu.clock.internal_1MHz.build.f_cpu=1000000L
+
+4808.menu.clock.external_16MHz=External 16 MHz
+4808.menu.clock.external_16MHz.upload.speed=115200
+4808.menu.clock.external_16MHz.bootloader.OSCCFG=0x01
+4808.menu.clock.external_16MHz.build.oscillator=-DUSE_EXTERNAL_OSCILLATOR
+4808.menu.clock.external_16MHz.build.f_cpu=16000000L
+
+4808.menu.clock.external_12MHz=External 12 MHz
+4808.menu.clock.external_12MHz.upload.speed=115200
+4808.menu.clock.external_12MHz.bootloader.OSCCFG=0x01
+4808.menu.clock.external_12MHz.build.oscillator=-DUSE_EXTERNAL_OSCILLATOR
+4808.menu.clock.external_12MHz.build.f_cpu=12000000L
+
+4808.menu.clock.external_8MHz=External 8 MHz
+4808.menu.clock.external_8MHz.upload.speed=115200
+4808.menu.clock.external_8MHz.bootloader.OSCCFG=0x01
+4808.menu.clock.external_8MHz.build.oscillator=-DUSE_EXTERNAL_OSCILLATOR
+4808.menu.clock.external_8MHz.build.f_cpu=8000000L
+
+4808.menu.clock.external_4MHz=External 4 MHz
+4808.menu.clock.external_4MHz.upload.speed=115200
+4808.menu.clock.external_4MHz.bootloader.OSCCFG=0x01
+4808.menu.clock.external_4MHz.build.oscillator=-DUSE_EXTERNAL_OSCILLATOR
+4808.menu.clock.external_4MHz.build.f_cpu=4000000L
+
+4808.menu.clock.external_1MHz=External 1 MHz
+4808.menu.clock.external_1MHz.upload.speed=115200
+4808.menu.clock.external_1MHz.bootloader.OSCCFG=0x01
+4808.menu.clock.external_1MHz.build.oscillator=-DUSE_EXTERNAL_OSCILLATOR
+4808.menu.clock.external_1MHz.build.f_cpu=1000000L
+
+# Bootloader
+4808.menu.bootloader.no_bootloader=No bootloader
+4808.menu.bootloader.no_bootloader.upload.maximum_size=49152
+4808.menu.bootloader.no_bootloader.upload.extra_params=
+4808.menu.bootloader.no_bootloader.build.text_section_start=.text=0x0
+4808.menu.bootloader.no_bootloader.build.export_merged_output=false
+4808.menu.bootloader.no_bootloader.bootloader.file=empty/empty.hex
+4808.menu.bootloader.no_bootloader.bootloader.BOOTEND=0x00
+
+4808.menu.bootloader.uart0_default=Optiboot (UART0 default pins)
+4808.menu.bootloader.uart0_default.upload.maximum_size=48640
+4808.menu.bootloader.uart0_default.upload.protocol=arduino
+4808.menu.bootloader.uart0_default.upload.port=UART0_DEF
+4808.menu.bootloader.uart0_default.upload.extra_params=
+4808.menu.bootloader.uart0_default.build.text_section_start=.text=0x200
+4808.menu.bootloader.uart0_default.build.export_merged_output=true
+4808.menu.bootloader.uart0_default.bootloader.file=optiboot/bootloaders/mega0/{upload.speed}/Optiboot_mega0_{upload.port}_{upload.speed}_A7.hex
+4808.menu.bootloader.uart0_default.bootloader.BOOTEND=0x02
+4808.menu.bootloader.uart0_default.bootloader.SYSCFG0=0b1100100{bootloader.eesave_bit}
+
+4808.menu.bootloader.uart0_alternative=Optiboot (UART0 alternative pins)
+4808.menu.bootloader.uart0_alternative.upload.maximum_size=48640
+4808.menu.bootloader.uart0_alternative.upload.protocol=arduino
+4808.menu.bootloader.uart0_alternative.upload.port=UART0_ALT
+4808.menu.bootloader.uart0_alternative.upload.extra_params=
+4808.menu.bootloader.uart0_alternative.build.text_section_start=.text=0x200
+4808.menu.bootloader.uart0_alternative.build.export_merged_output=true
+4808.menu.bootloader.uart0_alternative.bootloader.file=optiboot/bootloaders/mega0/{upload.speed}/Optiboot_mega0_{upload.port}_{upload.speed}_A7.hex
+4808.menu.bootloader.uart0_alternative.bootloader.BOOTEND=0x02
+4808.menu.bootloader.uart0_alternative.bootloader.SYSCFG0=0b1100100{bootloader.eesave_bit}
+
+4808.menu.bootloader.uart1_default=Optiboot (UART1 default pins)
+4808.menu.bootloader.uart1_default.upload.maximum_size=48640
+4808.menu.bootloader.uart1_default.upload.protocol=arduino
+4808.menu.bootloader.uart1_default.upload.port=UART1_DEF
+4808.menu.bootloader.uart1_default.upload.extra_params=
+4808.menu.bootloader.uart1_default.build.text_section_start=.text=0x200
+4808.menu.bootloader.uart1_default.build.export_merged_output=true
+4808.menu.bootloader.uart1_default.bootloader.file=optiboot/bootloaders/mega0/{upload.speed}/Optiboot_mega0_{upload.port}_{upload.speed}_A7.hex
+4808.menu.bootloader.uart1_default.bootloader.BOOTEND=0x02
+4808.menu.bootloader.uart1_default.bootloader.SYSCFG0=0b1100100{bootloader.eesave_bit}
+
+4808.menu.bootloader.uart1_alternative=Optiboot (UART1 alternative pins)
+4808.menu.bootloader.uart1_alternative.upload.maximum_size=48640
+4808.menu.bootloader.uart1_alternative.upload.protocol=arduino
+4808.menu.bootloader.uart1_alternative.upload.port=UART1_ALT
+4808.menu.bootloader.uart1_alternative.upload.extra_params=
+4808.menu.bootloader.uart1_alternative.build.text_section_start=.text=0x200
+4808.menu.bootloader.uart1_alternative.build.export_merged_output=true
+4808.menu.bootloader.uart1_alternative.bootloader.file=optiboot/bootloaders/mega0/{upload.speed}/Optiboot_mega0_{upload.port}_{upload.speed}_A7.hex
+4808.menu.bootloader.uart1_alternative.bootloader.BOOTEND=0x02
+4808.menu.bootloader.uart1_alternative.bootloader.SYSCFG0=0b1100100{bootloader.eesave_bit}
+
+4808.menu.bootloader.uart2_default=Optiboot (UART2 default pins)
+4808.menu.bootloader.uart2_default.upload.maximum_size=48640
+4808.menu.bootloader.uart2_default.upload.protocol=arduino
+4808.menu.bootloader.uart2_default.upload.port=UART2_DEF
+4808.menu.bootloader.uart2_default.upload.extra_params=
+4808.menu.bootloader.uart2_default.build.text_section_start=.text=0x200
+4808.menu.bootloader.uart2_default.build.export_merged_output=true
+4808.menu.bootloader.uart2_default.bootloader.file=optiboot/bootloaders/mega0/{upload.speed}/Optiboot_mega0_{upload.port}_{upload.speed}_A7.hex
+4808.menu.bootloader.uart2_default.bootloader.BOOTEND=0x02
+4808.menu.bootloader.uart2_default.bootloader.SYSCFG0=0b1100100{bootloader.eesave_bit}
+
+4808.menu.bootloader.uart2_alternative=Optiboot (UART2 alternative pins)
+4808.menu.bootloader.uart2_alternative.upload.maximum_size=48640
+4808.menu.bootloader.uart2_alternative.upload.protocol=arduino
+4808.menu.bootloader.uart2_alternative.upload.port=UART2_ALT
+4808.menu.bootloader.uart2_alternative.upload.extra_params=
+4808.menu.bootloader.uart2_alternative.build.text_section_start=.text=0x200
+4808.menu.bootloader.uart2_alternative.build.export_merged_output=true
+4808.menu.bootloader.uart2_alternative.bootloader.file=optiboot/bootloaders/mega0/{upload.speed}/Optiboot_mega0_{upload.port}_{upload.speed}_A7.hex
+4808.menu.bootloader.uart2_alternative.bootloader.BOOTEND=0x02
+4808.menu.bootloader.uart2_alternative.bootloader.SYSCFG0=0b1100100{bootloader.eesave_bit}
+
+
+
+####################
+#### ATmega3208 ####
+####################
+
+# General
+3208.name=ATmega3208
+3208.upload.tool=avrdude
+3208.upload.maximum_data_size=4096
+3208.upload.speed=115200
+3208.bootloader.tool=MegaCoreX:avrdude
+3208.build.core=MegaCoreX:coreX-corefiles
+3208.build.board=AVR_ATmega3208
+3208.build.mcu=atmega3208
+3208.build.extra_flags={build.oscillator}
+
+# Fuses we don't need to modify in the tools menu
+3208.bootloader.WDTCFG=0x00
+3208.bootloader.TCD0CFG=0x00
+3208.bootloader.SYSCFG1=0x06
+3208.bootloader.APPEND=0x00
+3208.bootloader.LOCKBIT=0xC5
+
+# Pinouts
+3208.menu.pinout.32pin_standard=32 pin standard
+3208.menu.pinout.32pin_standard.build.variant=32pin-standard
+
+# EEPROM
+3208.menu.eeprom.keep=EEPROM retained
+3208.menu.eeprom.keep.bootloader.eesave_bit=1
+3208.menu.eeprom.erase=EEPROM not retained
+3208.menu.eeprom.erase.bootloader.eesave_bit=0
+
+# Reset pin
+3208.menu.resetpin.reset=Reset
+3208.menu.resetpin.reset.bootloader.SYSCFG0=0b1100100{bootloader.eesave_bit}
+3208.menu.resetpin.gpio=GPIO
+3208.menu.resetpin.gpio.bootloader.SYSCFG0=0b1100000{bootloader.eesave_bit}
+
+# Brown out detection
+3208.menu.BOD.2v6=BOD 2.6V
+3208.menu.BOD.2v6.bootloader.BODCFG=0x54
+3208.menu.BOD.4v3=BOD 4.3V
+3208.menu.BOD.4v3.bootloader.BODCFG=0xF4
+3208.menu.BOD.4v0=BOD 4.0V
+3208.menu.BOD.4v0.bootloader.BODCFG=0xD4
+3208.menu.BOD.3v7=BOD 3.7V
+3208.menu.BOD.3v7.bootloader.BODCFG=0xB4
+3208.menu.BOD.3v3=BOD 3.3V
+3208.menu.BOD.3v3.bootloader.BODCFG=0x94
+3208.menu.BOD.2v9=BOD 2.9V
+3208.menu.BOD.2v9.bootloader.BODCFG=0x74
+3208.menu.BOD.2v1=BOD 2.1V
+3208.menu.BOD.2v1.bootloader.BODCFG=0x34
+3208.menu.BOD.1v8=BOD 1.8V
+3208.menu.BOD.1v8.bootloader.BODCFG=0x14
+3208.menu.BOD.disabled=BOD disabled
+3208.menu.BOD.disabled.bootloader.BODCFG=0x00
+
+# Clock
+3208.menu.clock.internal_16MHz=Internal 16 MHz
+3208.menu.clock.internal_16MHz.upload.speed=115200
+3208.menu.clock.internal_16MHz.bootloader.OSCCFG=0x01
+3208.menu.clock.internal_16MHz.build.oscillator=
+3208.menu.clock.internal_16MHz.build.f_cpu=16000000L
+
+3208.menu.clock.internal_20MHz=Internal 20 MHz
+3208.menu.clock.internal_20MHz.upload.speed=115200
+3208.menu.clock.internal_20MHz.bootloader.OSCCFG=0x02
+3208.menu.clock.internal_20MHz.build.oscillator=
+3208.menu.clock.internal_20MHz.build.f_cpu=20000000L
+
+3208.menu.clock.internal_10MHz=Internal 10 MHz
+3208.menu.clock.internal_10MHz.upload.speed=115200
+3208.menu.clock.internal_10MHz.bootloader.OSCCFG=0x02
+3208.menu.clock.internal_10MHz.build.oscillator=
+3208.menu.clock.internal_10MHz.build.f_cpu=10000000L
+
+3208.menu.clock.internal_8MHz=Internal 8 MHz
+3208.menu.clock.internal_8MHz.upload.speed=115200
+3208.menu.clock.internal_8MHz.bootloader.OSCCFG=0x01
+3208.menu.clock.internal_8MHz.build.oscillator=
+3208.menu.clock.internal_8MHz.build.f_cpu=8000000L
+
+3208.menu.clock.internal_5MHz=Internal 5 MHz
+3208.menu.clock.internal_5MHz.upload.speed=115200
+3208.menu.clock.internal_5MHz.bootloader.OSCCFG=0x02
+3208.menu.clock.internal_5MHz.build.oscillator=
+3208.menu.clock.internal_5MHz.build.f_cpu=5000000L
+
+3208.menu.clock.internal_4MHz=Internal 4 MHz
+3208.menu.clock.internal_4MHz.upload.speed=115200
+3208.menu.clock.internal_4MHz.bootloader.OSCCFG=0x01
+3208.menu.clock.internal_4MHz.build.oscillator=
+3208.menu.clock.internal_4MHz.build.f_cpu=4000000L
+
+3208.menu.clock.internal_2MHz=Internal 2 MHz
+3208.menu.clock.internal_2MHz.upload.speed=115200
+3208.menu.clock.internal_2MHz.bootloader.OSCCFG=0x01
+3208.menu.clock.internal_2MHz.build.oscillator=
+3208.menu.clock.internal_2MHz.build.f_cpu=2000000L
+
+3208.menu.clock.internal_1MHz=Internal 1 MHz
+3208.menu.clock.internal_1MHz.upload.speed=115200
+3208.menu.clock.internal_1MHz.bootloader.OSCCFG=0x01
+3208.menu.clock.internal_1MHz.build.oscillator=
+3208.menu.clock.internal_1MHz.build.f_cpu=1000000L
+
+3208.menu.clock.external_16MHz=External 16 MHz
+3208.menu.clock.external_16MHz.upload.speed=115200
+3208.menu.clock.external_16MHz.bootloader.OSCCFG=0x01
+3208.menu.clock.external_16MHz.build.oscillator=-DUSE_EXTERNAL_OSCILLATOR
+3208.menu.clock.external_16MHz.build.f_cpu=16000000L
+
+3208.menu.clock.external_12MHz=External 12 MHz
+3208.menu.clock.external_12MHz.upload.speed=115200
+3208.menu.clock.external_12MHz.bootloader.OSCCFG=0x01
+3208.menu.clock.external_12MHz.build.oscillator=-DUSE_EXTERNAL_OSCILLATOR
+3208.menu.clock.external_12MHz.build.f_cpu=12000000L
+
+3208.menu.clock.external_8MHz=External 8 MHz
+3208.menu.clock.external_8MHz.upload.speed=115200
+3208.menu.clock.external_8MHz.bootloader.OSCCFG=0x01
+3208.menu.clock.external_8MHz.build.oscillator=-DUSE_EXTERNAL_OSCILLATOR
+3208.menu.clock.external_8MHz.build.f_cpu=8000000L
+
+3208.menu.clock.external_4MHz=External 4 MHz
+3208.menu.clock.external_4MHz.upload.speed=115200
+3208.menu.clock.external_4MHz.bootloader.OSCCFG=0x01
+3208.menu.clock.external_4MHz.build.oscillator=-DUSE_EXTERNAL_OSCILLATOR
+3208.menu.clock.external_4MHz.build.f_cpu=4000000L
+
+3208.menu.clock.external_1MHz=External 1 MHz
+3208.menu.clock.external_1MHz.upload.speed=115200
+3208.menu.clock.external_1MHz.bootloader.OSCCFG=0x01
+3208.menu.clock.external_1MHz.build.oscillator=-DUSE_EXTERNAL_OSCILLATOR
+3208.menu.clock.external_1MHz.build.f_cpu=1000000L
+
+# Bootloader
+3208.menu.bootloader.no_bootloader=No bootloader
+3208.menu.bootloader.no_bootloader.upload.maximum_size=32768
+3208.menu.bootloader.no_bootloader.upload.extra_params=
+3208.menu.bootloader.no_bootloader.build.text_section_start=.text=0x0
+3208.menu.bootloader.no_bootloader.build.export_merged_output=false
+3208.menu.bootloader.no_bootloader.bootloader.file=empty/empty.hex
+3208.menu.bootloader.no_bootloader.bootloader.BOOTEND=0x00
+
+3208.menu.bootloader.uart0_default=Optiboot (UART0 default pins)
+3208.menu.bootloader.uart0_default.upload.maximum_size=32256
+3208.menu.bootloader.uart0_default.upload.protocol=arduino
+3208.menu.bootloader.uart0_default.upload.port=UART0_DEF
+3208.menu.bootloader.uart0_default.upload.extra_params=
+3208.menu.bootloader.uart0_default.build.text_section_start=.text=0x200
+3208.menu.bootloader.uart0_default.build.export_merged_output=true
+3208.menu.bootloader.uart0_default.bootloader.file=optiboot/bootloaders/mega0/{upload.speed}/Optiboot_mega0_{upload.port}_{upload.speed}_A7.hex
+3208.menu.bootloader.uart0_default.bootloader.BOOTEND=0x02
+3208.menu.bootloader.uart0_default.bootloader.SYSCFG0=0b1100100{bootloader.eesave_bit}
+
+3208.menu.bootloader.uart0_alternative=Optiboot (UART0 alternative pins)
+3208.menu.bootloader.uart0_alternative.upload.maximum_size=32256
+3208.menu.bootloader.uart0_alternative.upload.protocol=arduino
+3208.menu.bootloader.uart0_alternative.upload.port=UART0_ALT
+3208.menu.bootloader.uart0_alternative.upload.extra_params=
+3208.menu.bootloader.uart0_alternative.build.text_section_start=.text=0x200
+3208.menu.bootloader.uart0_alternative.build.export_merged_output=true
+3208.menu.bootloader.uart0_alternative.bootloader.file=optiboot/bootloaders/mega0/{upload.speed}/Optiboot_mega0_{upload.port}_{upload.speed}_A7.hex
+3208.menu.bootloader.uart0_alternative.bootloader.BOOTEND=0x02
+3208.menu.bootloader.uart0_alternative.bootloader.SYSCFG0=0b1100100{bootloader.eesave_bit}
+
+3208.menu.bootloader.uart1_default=Optiboot (UART1 default pins)
+3208.menu.bootloader.uart1_default.upload.maximum_size=32256
+3208.menu.bootloader.uart1_default.upload.protocol=arduino
+3208.menu.bootloader.uart1_default.upload.port=UART1_DEF
+3208.menu.bootloader.uart1_default.upload.extra_params=
+3208.menu.bootloader.uart1_default.build.text_section_start=.text=0x200
+3208.menu.bootloader.uart1_default.build.export_merged_output=true
+3208.menu.bootloader.uart1_default.bootloader.file=optiboot/bootloaders/mega0/{upload.speed}/Optiboot_mega0_{upload.port}_{upload.speed}_A7.hex
+3208.menu.bootloader.uart1_default.bootloader.BOOTEND=0x02
+3208.menu.bootloader.uart1_default.bootloader.SYSCFG0=0b1100100{bootloader.eesave_bit}
+
+3208.menu.bootloader.uart1_alternative=Optiboot (UART1 alternative pins)
+3208.menu.bootloader.uart1_alternative.upload.maximum_size=32256
+3208.menu.bootloader.uart1_alternative.upload.protocol=arduino
+3208.menu.bootloader.uart1_alternative.upload.port=UART1_ALT
+3208.menu.bootloader.uart1_alternative.upload.extra_params=
+3208.menu.bootloader.uart1_alternative.build.text_section_start=.text=0x200
+3208.menu.bootloader.uart1_alternative.build.export_merged_output=true
+3208.menu.bootloader.uart1_alternative.bootloader.file=optiboot/bootloaders/mega0/{upload.speed}/Optiboot_mega0_{upload.port}_{upload.speed}_A7.hex
+3208.menu.bootloader.uart1_alternative.bootloader.BOOTEND=0x02
+3208.menu.bootloader.uart1_alternative.bootloader.SYSCFG0=0b1100100{bootloader.eesave_bit}
+
+3208.menu.bootloader.uart2_default=Optiboot (UART2 default pins)
+3208.menu.bootloader.uart2_default.upload.maximum_size=32256
+3208.menu.bootloader.uart2_default.upload.protocol=arduino
+3208.menu.bootloader.uart2_default.upload.port=UART2_DEF
+3208.menu.bootloader.uart2_default.upload.extra_params=
+3208.menu.bootloader.uart2_default.build.text_section_start=.text=0x200
+3208.menu.bootloader.uart2_default.build.export_merged_output=true
+3208.menu.bootloader.uart2_default.bootloader.file=optiboot/bootloaders/mega0/{upload.speed}/Optiboot_mega0_{upload.port}_{upload.speed}_A7.hex
+3208.menu.bootloader.uart2_default.bootloader.BOOTEND=0x02
+3208.menu.bootloader.uart2_default.bootloader.SYSCFG0=0b1100100{bootloader.eesave_bit}
+
+3208.menu.bootloader.uart2_alternative=Optiboot (UART2 alternative pins)
+3208.menu.bootloader.uart2_alternative.upload.maximum_size=32256
+3208.menu.bootloader.uart2_alternative.upload.protocol=arduino
+3208.menu.bootloader.uart2_alternative.upload.port=UART2_ALT
+3208.menu.bootloader.uart2_alternative.upload.extra_params=
+3208.menu.bootloader.uart2_alternative.build.text_section_start=.text=0x200
+3208.menu.bootloader.uart2_alternative.build.export_merged_output=true
+3208.menu.bootloader.uart2_alternative.bootloader.file=optiboot/bootloaders/mega0/{upload.speed}/Optiboot_mega0_{upload.port}_{upload.speed}_A7.hex
+3208.menu.bootloader.uart2_alternative.bootloader.BOOTEND=0x02
+3208.menu.bootloader.uart2_alternative.bootloader.SYSCFG0=0b1100100{bootloader.eesave_bit}
+
+####################
+#### ATmega1608 ####
+####################
+
+# General
+1608.name=ATmega1608
+1608.upload.tool=avrdude
+1608.upload.maximum_data_size=2048
+1608.upload.speed=115200
+1608.bootloader.tool=MegaCoreX:avrdude
+1608.build.core=MegaCoreX:coreX-corefiles
+1608.build.board=AVR_ATmega1608
+1608.build.mcu=atmega1608
+1608.build.extra_flags={build.oscillator}
+
+# Fuses we don't need to modify in the tools menu
+1608.bootloader.WDTCFG=0x00
+1608.bootloader.TCD0CFG=0x00
+1608.bootloader.SYSCFG1=0x06
+1608.bootloader.APPEND=0x00
+1608.bootloader.LOCKBIT=0xC5
+
+# Pinouts
+1608.menu.pinout.32pin_standard=32 pin standard
+1608.menu.pinout.32pin_standard.build.variant=32pin-standard
+1608.menu.pinout.28pin_standard=28 pin standard
+1608.menu.pinout.28pin_standard.build.variant=28pin-standard
+
+# EEPROM
+1608.menu.eeprom.keep=EEPROM retained
+1608.menu.eeprom.keep.bootloader.eesave_bit=1
+1608.menu.eeprom.erase=EEPROM not retained
+1608.menu.eeprom.erase.bootloader.eesave_bit=0
+
+# Reset pin
+1608.menu.resetpin.reset=Reset
+1608.menu.resetpin.reset.bootloader.SYSCFG0=0b1100100{bootloader.eesave_bit}
+1608.menu.resetpin.gpio=GPIO
+1608.menu.resetpin.gpio.bootloader.SYSCFG0=0b1100000{bootloader.eesave_bit}
+
+# Brown out detection
+1608.menu.BOD.2v6=BOD 2.6V
+1608.menu.BOD.2v6.bootloader.BODCFG=0x54
+1608.menu.BOD.4v3=BOD 4.3V
+1608.menu.BOD.4v3.bootloader.BODCFG=0xF4
+1608.menu.BOD.4v0=BOD 4.0V
+1608.menu.BOD.4v0.bootloader.BODCFG=0xD4
+1608.menu.BOD.3v7=BOD 3.7V
+1608.menu.BOD.3v7.bootloader.BODCFG=0xB4
+1608.menu.BOD.3v3=BOD 3.3V
+1608.menu.BOD.3v3.bootloader.BODCFG=0x94
+1608.menu.BOD.2v9=BOD 2.9V
+1608.menu.BOD.2v9.bootloader.BODCFG=0x74
+1608.menu.BOD.2v1=BOD 2.1V
+1608.menu.BOD.2v1.bootloader.BODCFG=0x34
+1608.menu.BOD.1v8=BOD 1.8V
+1608.menu.BOD.1v8.bootloader.BODCFG=0x14
+1608.menu.BOD.disabled=BOD disabled
+1608.menu.BOD.disabled.bootloader.BODCFG=0x00
+
+# Clock
+1608.menu.clock.internal_16MHz=Internal 16 MHz
+1608.menu.clock.internal_16MHz.upload.speed=115200
+1608.menu.clock.internal_16MHz.bootloader.OSCCFG=0x01
+1608.menu.clock.internal_16MHz.build.oscillator=
+1608.menu.clock.internal_16MHz.build.f_cpu=16000000L
+
+1608.menu.clock.internal_20MHz=Internal 20 MHz
+1608.menu.clock.internal_20MHz.upload.speed=115200
+1608.menu.clock.internal_20MHz.bootloader.OSCCFG=0x02
+1608.menu.clock.internal_20MHz.build.oscillator=
+1608.menu.clock.internal_20MHz.build.f_cpu=20000000L
+
+1608.menu.clock.internal_10MHz=Internal 10 MHz
+1608.menu.clock.internal_10MHz.upload.speed=115200
+1608.menu.clock.internal_10MHz.bootloader.OSCCFG=0x02
+1608.menu.clock.internal_10MHz.build.oscillator=
+1608.menu.clock.internal_10MHz.build.f_cpu=10000000L
+
+1608.menu.clock.internal_8MHz=Internal 8 MHz
+1608.menu.clock.internal_8MHz.upload.speed=115200
+1608.menu.clock.internal_8MHz.bootloader.OSCCFG=0x01
+1608.menu.clock.internal_8MHz.build.oscillator=
+1608.menu.clock.internal_8MHz.build.f_cpu=8000000L
+
+1608.menu.clock.internal_5MHz=Internal 5 MHz
+1608.menu.clock.internal_5MHz.upload.speed=115200
+1608.menu.clock.internal_5MHz.bootloader.OSCCFG=0x02
+1608.menu.clock.internal_5MHz.build.oscillator=
+1608.menu.clock.internal_5MHz.build.f_cpu=5000000L
+
+1608.menu.clock.internal_4MHz=Internal 4 MHz
+1608.menu.clock.internal_4MHz.upload.speed=115200
+1608.menu.clock.internal_4MHz.bootloader.OSCCFG=0x01
+1608.menu.clock.internal_4MHz.build.oscillator=
+1608.menu.clock.internal_4MHz.build.f_cpu=4000000L
+
+1608.menu.clock.internal_2MHz=Internal 2 MHz
+1608.menu.clock.internal_2MHz.upload.speed=115200
+1608.menu.clock.internal_2MHz.bootloader.OSCCFG=0x01
+1608.menu.clock.internal_2MHz.build.oscillator=
+1608.menu.clock.internal_2MHz.build.f_cpu=2000000L
+
+1608.menu.clock.internal_1MHz=Internal 1 MHz
+1608.menu.clock.internal_1MHz.upload.speed=115200
+1608.menu.clock.internal_1MHz.bootloader.OSCCFG=0x01
+1608.menu.clock.internal_1MHz.build.oscillator=
+1608.menu.clock.internal_1MHz.build.f_cpu=1000000L
+
+1608.menu.clock.external_16MHz=External 16 MHz
+1608.menu.clock.external_16MHz.upload.speed=115200
+1608.menu.clock.external_16MHz.bootloader.OSCCFG=0x01
+1608.menu.clock.external_16MHz.build.oscillator=-DUSE_EXTERNAL_OSCILLATOR
+1608.menu.clock.external_16MHz.build.f_cpu=16000000L
+
+1608.menu.clock.external_12MHz=External 12 MHz
+1608.menu.clock.external_12MHz.upload.speed=115200
+1608.menu.clock.external_12MHz.bootloader.OSCCFG=0x01
+1608.menu.clock.external_12MHz.build.oscillator=-DUSE_EXTERNAL_OSCILLATOR
+1608.menu.clock.external_12MHz.build.f_cpu=12000000L
+
+1608.menu.clock.external_8MHz=External 8 MHz
+1608.menu.clock.external_8MHz.upload.speed=115200
+1608.menu.clock.external_8MHz.bootloader.OSCCFG=0x01
+1608.menu.clock.external_8MHz.build.oscillator=-DUSE_EXTERNAL_OSCILLATOR
+1608.menu.clock.external_8MHz.build.f_cpu=8000000L
+
+1608.menu.clock.external_4MHz=External 4 MHz
+1608.menu.clock.external_4MHz.upload.speed=115200
+1608.menu.clock.external_4MHz.bootloader.OSCCFG=0x01
+1608.menu.clock.external_4MHz.build.oscillator=-DUSE_EXTERNAL_OSCILLATOR
+1608.menu.clock.external_4MHz.build.f_cpu=4000000L
+
+1608.menu.clock.external_1MHz=External 1 MHz
+1608.menu.clock.external_1MHz.upload.speed=115200
+1608.menu.clock.external_1MHz.bootloader.OSCCFG=0x01
+1608.menu.clock.external_1MHz.build.oscillator=-DUSE_EXTERNAL_OSCILLATOR
+1608.menu.clock.external_1MHz.build.f_cpu=1000000L
+
+# Bootloader
+1608.menu.bootloader.no_bootloader=No bootloader
+1608.menu.bootloader.no_bootloader.upload.maximum_size=16384
+1608.menu.bootloader.no_bootloader.upload.extra_params=
+1608.menu.bootloader.no_bootloader.build.text_section_start=.text=0x0
+1608.menu.bootloader.no_bootloader.build.export_merged_output=false
+1608.menu.bootloader.no_bootloader.bootloader.file=empty/empty.hex
+1608.menu.bootloader.no_bootloader.bootloader.BOOTEND=0x00
+
+1608.menu.bootloader.uart0_default=Optiboot (UART0 default pins)
+1608.menu.bootloader.uart0_default.upload.maximum_size=15872
+1608.menu.bootloader.uart0_default.upload.protocol=arduino
+1608.menu.bootloader.uart0_default.upload.port=UART0_DEF
+1608.menu.bootloader.uart0_default.upload.extra_params=
+1608.menu.bootloader.uart0_default.build.text_section_start=.text=0x200
+1608.menu.bootloader.uart0_default.build.export_merged_output=true
+1608.menu.bootloader.uart0_default.bootloader.file=optiboot/bootloaders/mega0/{upload.speed}/Optiboot_mega0_{upload.port}_{upload.speed}_A7.hex
+1608.menu.bootloader.uart0_default.bootloader.BOOTEND=0x02
+1608.menu.bootloader.uart0_default.bootloader.SYSCFG0=0b1100100{bootloader.eesave_bit}
+
+1608.menu.bootloader.uart0_alternative=Optiboot (UART0 alternative pins)
+1608.menu.bootloader.uart0_alternative.upload.maximum_size=15872
+1608.menu.bootloader.uart0_alternative.upload.protocol=arduino
+1608.menu.bootloader.uart0_alternative.upload.port=UART0_ALT
+1608.menu.bootloader.uart0_alternative.upload.extra_params=
+1608.menu.bootloader.uart0_alternative.build.text_section_start=.text=0x200
+1608.menu.bootloader.uart0_alternative.build.export_merged_output=true
+1608.menu.bootloader.uart0_alternative.bootloader.file=optiboot/bootloaders/mega0/{upload.speed}/Optiboot_mega0_{upload.port}_{upload.speed}_A7.hex
+1608.menu.bootloader.uart0_alternative.bootloader.BOOTEND=0x02
+1608.menu.bootloader.uart0_alternative.bootloader.SYSCFG0=0b1100100{bootloader.eesave_bit}
+
+1608.menu.bootloader.uart1_default=Optiboot (UART1 default pins)
+1608.menu.bootloader.uart1_default.upload.maximum_size=15872
+1608.menu.bootloader.uart1_default.upload.protocol=arduino
+1608.menu.bootloader.uart1_default.upload.port=UART1_DEF
+1608.menu.bootloader.uart1_default.upload.extra_params=
+1608.menu.bootloader.uart1_default.build.text_section_start=.text=0x200
+1608.menu.bootloader.uart1_default.build.export_merged_output=true
+1608.menu.bootloader.uart1_default.bootloader.file=optiboot/bootloaders/mega0/{upload.speed}/Optiboot_mega0_{upload.port}_{upload.speed}_A7.hex
+1608.menu.bootloader.uart1_default.bootloader.BOOTEND=0x02
+1608.menu.bootloader.uart1_default.bootloader.SYSCFG0=0b1100100{bootloader.eesave_bit}
+
+1608.menu.bootloader.uart1_alternative=Optiboot (UART1 alternative pins)
+1608.menu.bootloader.uart1_alternative.upload.maximum_size=15872
+1608.menu.bootloader.uart1_alternative.upload.protocol=arduino
+1608.menu.bootloader.uart1_alternative.upload.port=UART1_ALT
+1608.menu.bootloader.uart1_alternative.upload.extra_params=
+1608.menu.bootloader.uart1_alternative.build.text_section_start=.text=0x200
+1608.menu.bootloader.uart1_alternative.build.export_merged_output=true
+1608.menu.bootloader.uart1_alternative.bootloader.file=optiboot/bootloaders/mega0/{upload.speed}/Optiboot_mega0_{upload.port}_{upload.speed}_A7.hex
+1608.menu.bootloader.uart1_alternative.bootloader.BOOTEND=0x02
+1608.menu.bootloader.uart1_alternative.bootloader.SYSCFG0=0b1100100{bootloader.eesave_bit}
+
+1608.menu.bootloader.uart2_default=Optiboot (UART2 default pins)
+1608.menu.bootloader.uart2_default.upload.maximum_size=15872
+1608.menu.bootloader.uart2_default.upload.protocol=arduino
+1608.menu.bootloader.uart2_default.upload.port=UART2_DEF
+1608.menu.bootloader.uart2_default.upload.extra_params=
+1608.menu.bootloader.uart2_default.build.text_section_start=.text=0x200
+1608.menu.bootloader.uart2_default.build.export_merged_output=true
+1608.menu.bootloader.uart2_default.bootloader.file=optiboot/bootloaders/mega0/{upload.speed}/Optiboot_mega0_{upload.port}_{upload.speed}_A7.hex
+1608.menu.bootloader.uart2_default.bootloader.BOOTEND=0x02
+1608.menu.bootloader.uart2_default.bootloader.SYSCFG0=0b1100100{bootloader.eesave_bit}
+
+1608.menu.bootloader.uart2_alternative=Optiboot (UART2 alternative pins)
+1608.menu.bootloader.uart2_alternative.upload.maximum_size=15872
+1608.menu.bootloader.uart2_alternative.upload.protocol=arduino
+1608.menu.bootloader.uart2_alternative.upload.port=UART2_ALT
+1608.menu.bootloader.uart2_alternative.upload.extra_params=
+1608.menu.bootloader.uart2_alternative.build.text_section_start=.text=0x200
+1608.menu.bootloader.uart2_alternative.build.export_merged_output=true
+1608.menu.bootloader.uart2_alternative.bootloader.file=optiboot/bootloaders/mega0/{upload.speed}/Optiboot_mega0_{upload.port}_{upload.speed}_A7.hex
+1608.menu.bootloader.uart2_alternative.bootloader.BOOTEND=0x02
+1608.menu.bootloader.uart2_alternative.bootloader.SYSCFG0=0b1100100{bootloader.eesave_bit}
+
+
+###################
+#### ATmega808 ####
+###################
+
+# General
+808.name=ATmega808
+808.upload.tool=avrdude
+808.upload.maximum_data_size=1024
+808.upload.speed=115200
+808.bootloader.tool=MegaCoreX:avrdude
+808.build.core=MegaCoreX:coreX-corefiles
+808.build.board=AVR_ATmega808
+808.build.mcu=atmega808
+808.build.extra_flags={build.oscillator}
+
+# Fuses we don't need to modify in the tools menu
+808.bootloader.WDTCFG=0x00
+808.bootloader.TCD0CFG=0x00
+808.bootloader.SYSCFG1=0x06
+808.bootloader.APPEND=0x00
+808.bootloader.LOCKBIT=0xC5
+
+# Pinouts
+808.menu.pinout.32pin_standard=32 pin standard
+808.menu.pinout.32pin_standard.build.variant=32pin-standard
+
+
+# EEPROM
+808.menu.eeprom.keep=EEPROM retained
+808.menu.eeprom.keep.bootloader.eesave_bit=1
+808.menu.eeprom.erase=EEPROM not retained
+808.menu.eeprom.erase.bootloader.eesave_bit=0
+
+# Reset pin
+808.menu.resetpin.reset=Reset
+808.menu.resetpin.reset.bootloader.SYSCFG0=0b1100100{bootloader.eesave_bit}
+808.menu.resetpin.gpio=GPIO
+808.menu.resetpin.gpio.bootloader.SYSCFG0=0b1100000{bootloader.eesave_bit}
+
+# Brown out detection
+808.menu.BOD.2v6=BOD 2.6V
+808.menu.BOD.2v6.bootloader.BODCFG=0x54
+808.menu.BOD.4v3=BOD 4.3V
+808.menu.BOD.4v3.bootloader.BODCFG=0xF4
+808.menu.BOD.4v0=BOD 4.0V
+808.menu.BOD.4v0.bootloader.BODCFG=0xD4
+808.menu.BOD.3v7=BOD 3.7V
+808.menu.BOD.3v7.bootloader.BODCFG=0xB4
+808.menu.BOD.3v3=BOD 3.3V
+808.menu.BOD.3v3.bootloader.BODCFG=0x94
+808.menu.BOD.2v9=BOD 2.9V
+808.menu.BOD.2v9.bootloader.BODCFG=0x74
+808.menu.BOD.2v1=BOD 2.1V
+808.menu.BOD.2v1.bootloader.BODCFG=0x34
+808.menu.BOD.1v8=BOD 1.8V
+808.menu.BOD.1v8.bootloader.BODCFG=0x14
+808.menu.BOD.disabled=BOD disabled
+808.menu.BOD.disabled.bootloader.BODCFG=0x00
+
+# Clock
+808.menu.clock.internal_16MHz=Internal 16 MHz
+808.menu.clock.internal_16MHz.upload.speed=115200
+808.menu.clock.internal_16MHz.bootloader.OSCCFG=0x01
+808.menu.clock.internal_16MHz.build.oscillator=
+808.menu.clock.internal_16MHz.build.f_cpu=16000000L
+
+808.menu.clock.internal_20MHz=Internal 20 MHz
+808.menu.clock.internal_20MHz.upload.speed=115200
+808.menu.clock.internal_20MHz.bootloader.OSCCFG=0x02
+808.menu.clock.internal_20MHz.build.oscillator=
+808.menu.clock.internal_20MHz.build.f_cpu=20000000L
+
+808.menu.clock.internal_10MHz=Internal 10 MHz
+808.menu.clock.internal_10MHz.upload.speed=115200
+808.menu.clock.internal_10MHz.bootloader.OSCCFG=0x02
+808.menu.clock.internal_10MHz.build.oscillator=
+808.menu.clock.internal_10MHz.build.f_cpu=10000000L
+
+808.menu.clock.internal_8MHz=Internal 8 MHz
+808.menu.clock.internal_8MHz.upload.speed=115200
+808.menu.clock.internal_8MHz.bootloader.OSCCFG=0x01
+808.menu.clock.internal_8MHz.build.oscillator=
+808.menu.clock.internal_8MHz.build.f_cpu=8000000L
+
+808.menu.clock.internal_5MHz=Internal 5 MHz
+808.menu.clock.internal_5MHz.upload.speed=115200
+808.menu.clock.internal_5MHz.bootloader.OSCCFG=0x02
+808.menu.clock.internal_5MHz.build.oscillator=
+808.menu.clock.internal_5MHz.build.f_cpu=5000000L
+
+808.menu.clock.internal_4MHz=Internal 4 MHz
+808.menu.clock.internal_4MHz.upload.speed=115200
+808.menu.clock.internal_4MHz.bootloader.OSCCFG=0x01
+808.menu.clock.internal_4MHz.build.oscillator=
+808.menu.clock.internal_4MHz.build.f_cpu=4000000L
+
+808.menu.clock.internal_2MHz=Internal 2 MHz
+808.menu.clock.internal_2MHz.upload.speed=115200
+808.menu.clock.internal_2MHz.bootloader.OSCCFG=0x01
+808.menu.clock.internal_2MHz.build.oscillator=
+808.menu.clock.internal_2MHz.build.f_cpu=2000000L
+
+808.menu.clock.internal_1MHz=Internal 1 MHz
+808.menu.clock.internal_1MHz.upload.speed=115200
+808.menu.clock.internal_1MHz.bootloader.OSCCFG=0x01
+808.menu.clock.internal_1MHz.build.oscillator=
+808.menu.clock.internal_1MHz.build.f_cpu=1000000L
+
+808.menu.clock.external_16MHz=External 16 MHz
+808.menu.clock.external_16MHz.upload.speed=115200
+808.menu.clock.external_16MHz.bootloader.OSCCFG=0x01
+808.menu.clock.external_16MHz.build.oscillator=-DUSE_EXTERNAL_OSCILLATOR
+808.menu.clock.external_16MHz.build.f_cpu=16000000L
+
+808.menu.clock.external_12MHz=External 12 MHz
+808.menu.clock.external_12MHz.upload.speed=115200
+808.menu.clock.external_12MHz.bootloader.OSCCFG=0x01
+808.menu.clock.external_12MHz.build.oscillator=-DUSE_EXTERNAL_OSCILLATOR
+808.menu.clock.external_12MHz.build.f_cpu=12000000L
+
+808.menu.clock.external_8MHz=External 8 MHz
+808.menu.clock.external_8MHz.upload.speed=115200
+808.menu.clock.external_8MHz.bootloader.OSCCFG=0x01
+808.menu.clock.external_8MHz.build.oscillator=-DUSE_EXTERNAL_OSCILLATOR
+808.menu.clock.external_8MHz.build.f_cpu=8000000L
+
+808.menu.clock.external_4MHz=External 4 MHz
+808.menu.clock.external_4MHz.upload.speed=115200
+808.menu.clock.external_4MHz.bootloader.OSCCFG=0x01
+808.menu.clock.external_4MHz.build.oscillator=-DUSE_EXTERNAL_OSCILLATOR
+808.menu.clock.external_4MHz.build.f_cpu=4000000L
+
+808.menu.clock.external_1MHz=External 1 MHz
+808.menu.clock.external_1MHz.upload.speed=115200
+808.menu.clock.external_1MHz.bootloader.OSCCFG=0x01
+808.menu.clock.external_1MHz.build.oscillator=-DUSE_EXTERNAL_OSCILLATOR
+808.menu.clock.external_1MHz.build.f_cpu=1000000L
+
+# Bootloader
+808.menu.bootloader.no_bootloader=No bootloader
+808.menu.bootloader.no_bootloader.upload.maximum_size=8192
+808.menu.bootloader.no_bootloader.upload.extra_params=
+808.menu.bootloader.no_bootloader.build.text_section_start=.text=0x0
+808.menu.bootloader.no_bootloader.build.export_merged_output=false
+808.menu.bootloader.no_bootloader.bootloader.file=empty/empty.hex
+808.menu.bootloader.no_bootloader.bootloader.BOOTEND=0x00
+
+808.menu.bootloader.uart0_default=Optiboot (UART0 default pins)
+808.menu.bootloader.uart0_default.upload.maximum_size=7680
+808.menu.bootloader.uart0_default.upload.protocol=arduino
+808.menu.bootloader.uart0_default.upload.port=UART0_DEF
+808.menu.bootloader.uart0_default.upload.extra_params=
+808.menu.bootloader.uart0_default.build.text_section_start=.text=0x200
+808.menu.bootloader.uart0_default.build.export_merged_output=true
+808.menu.bootloader.uart0_default.bootloader.file=optiboot/bootloaders/mega0/{upload.speed}/Optiboot_mega0_{upload.port}_{upload.speed}_A7.hex
+808.menu.bootloader.uart0_default.bootloader.BOOTEND=0x02
+808.menu.bootloader.uart0_default.bootloader.SYSCFG0=0b1100100{bootloader.eesave_bit}
+
+808.menu.bootloader.uart0_alternative=Optiboot (UART0 alternative pins)
+808.menu.bootloader.uart0_alternative.upload.maximum_size=7680
+808.menu.bootloader.uart0_alternative.upload.protocol=arduino
+808.menu.bootloader.uart0_alternative.upload.port=UART0_ALT
+808.menu.bootloader.uart0_alternative.upload.extra_params=
+808.menu.bootloader.uart0_alternative.build.text_section_start=.text=0x200
+808.menu.bootloader.uart0_alternative.build.export_merged_output=true
+808.menu.bootloader.uart0_alternative.bootloader.file=optiboot/bootloaders/mega0/{upload.speed}/Optiboot_mega0_{upload.port}_{upload.speed}_A7.hex
+808.menu.bootloader.uart0_alternative.bootloader.BOOTEND=0x02
+808.menu.bootloader.uart0_alternative.bootloader.SYSCFG0=0b1100100{bootloader.eesave_bit}
+
+808.menu.bootloader.uart1_default=Optiboot (UART1 default pins)
+808.menu.bootloader.uart1_default.upload.maximum_size=7680
+808.menu.bootloader.uart1_default.upload.protocol=arduino
+808.menu.bootloader.uart1_default.upload.port=UART1_DEF
+808.menu.bootloader.uart1_default.upload.extra_params=
+808.menu.bootloader.uart1_default.build.text_section_start=.text=0x200
+808.menu.bootloader.uart1_default.build.export_merged_output=true
+808.menu.bootloader.uart1_default.bootloader.file=optiboot/bootloaders/mega0/{upload.speed}/Optiboot_mega0_{upload.port}_{upload.speed}_A7.hex
+808.menu.bootloader.uart1_default.bootloader.BOOTEND=0x02
+808.menu.bootloader.uart1_default.bootloader.SYSCFG0=0b1100100{bootloader.eesave_bit}
+
+808.menu.bootloader.uart1_alternative=Optiboot (UART1 alternative pins)
+808.menu.bootloader.uart1_alternative.upload.maximum_size=7680
+808.menu.bootloader.uart1_alternative.upload.protocol=arduino
+808.menu.bootloader.uart1_alternative.upload.port=UART1_ALT
+808.menu.bootloader.uart1_alternative.upload.extra_params=
+808.menu.bootloader.uart1_alternative.build.text_section_start=.text=0x200
+808.menu.bootloader.uart1_alternative.build.export_merged_output=true
+808.menu.bootloader.uart1_alternative.bootloader.file=optiboot/bootloaders/mega0/{upload.speed}/Optiboot_mega0_{upload.port}_{upload.speed}_A7.hex
+808.menu.bootloader.uart1_alternative.bootloader.BOOTEND=0x02
+808.menu.bootloader.uart1_alternative.bootloader.SYSCFG0=0b1100100{bootloader.eesave_bit}
+
+808.menu.bootloader.uart2_default=Optiboot (UART2 default pins)
+808.menu.bootloader.uart2_default.upload.maximum_size=7680
+808.menu.bootloader.uart2_default.upload.protocol=arduino
+808.menu.bootloader.uart2_default.upload.port=UART2_DEF
+808.menu.bootloader.uart2_default.upload.extra_params=
+808.menu.bootloader.uart2_default.build.text_section_start=.text=0x200
+808.menu.bootloader.uart2_default.build.export_merged_output=true
+808.menu.bootloader.uart2_default.bootloader.file=optiboot/bootloaders/mega0/{upload.speed}/Optiboot_mega0_{upload.port}_{upload.speed}_A7.hex
+808.menu.bootloader.uart2_default.bootloader.BOOTEND=0x02
+808.menu.bootloader.uart2_default.bootloader.SYSCFG0=0b1100100{bootloader.eesave_bit}
+
+808.menu.bootloader.uart2_alternative=Optiboot (UART2 alternative pins)
+808.menu.bootloader.uart2_alternative.upload.maximum_size=7680
+808.menu.bootloader.uart2_alternative.upload.protocol=arduino
+808.menu.bootloader.uart2_alternative.upload.port=UART2_ALT
+808.menu.bootloader.uart2_alternative.upload.extra_params=
+808.menu.bootloader.uart2_alternative.build.text_section_start=.text=0x200
+808.menu.bootloader.uart2_alternative.build.export_merged_output=true
+808.menu.bootloader.uart2_alternative.bootloader.file=optiboot/bootloaders/mega0/{upload.speed}/Optiboot_mega0_{upload.port}_{upload.speed}_A7.hex
+808.menu.bootloader.uart2_alternative.bootloader.BOOTEND=0x02
+808.menu.bootloader.uart2_alternative.bootloader.SYSCFG0=0b1100100{bootloader.eesave_bit}
