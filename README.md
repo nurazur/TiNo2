@@ -1,7 +1,7 @@
 # TiNo2
 [German Version](https://github.com/nurazur/TiNo2/blob/master/LIESMICH.md)
 
-![]([https://github.com/nurazur/TiNo2/blob/master/TiNo2_logo.png](https://github.com/nurazur/TiNo2/blob/master/Tino2_logo.png))
+![](https://github.com/nurazur/TiNo2/blob/master/Tino2_logo.png)
 
 "**Ti**ny **No**de": battery powered wireless sensor or wireless actor.
 This is the 2nd generation of TiNo. There are numerous technical improvements, mainly more flash memory and further reduction of power consumption. The antenna is now accommodated on the PCB. The project is based on Microchip Avr0 series processors (here the Atmega3208 or atmega4808).
