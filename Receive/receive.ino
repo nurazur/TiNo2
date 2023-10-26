@@ -38,7 +38,7 @@
 // the RF protocol is completely binary, see https://github.com/nurazur/tino
 
 
-#define SKETCHNAME "TiNo2 receive.ino Ver 03/05/2023"
+#define SKETCHNAME "TiNo2 Receive.ino Ver 26/10/2023"
 #define BUILD 10
 
 
@@ -66,7 +66,6 @@ HardwareSerial *mySerial = &Serial;
 #include "SHTSensor.h"
 #define KEY  "TheQuickBrownFox"
 
-
 /*****************************************************************************/
 /***                       Actions Struct                                  ***/
 /*****************************************************************************/
@@ -75,50 +74,42 @@ typedef struct {
   uint8_t pin;             // the pin to trigger
   uint8_t mask;
   uint8_t mode:2;           //type of action:  OFF (00) ON(01) TOGGLE (10) PULSE (11)
-  uint8_t duration:5;       //  Pulse length = 2^duration 
+  uint8_t duration:5;       //  Pulse length = 2^duration
   uint8_t default_val:1;    //default on power up, 1= on, 0 = off
 } action;
-
-/*****************************************************************************/
-/***                            I2C Driver                                 ***/
-/*****************************************************************************/
-// SHT21/HTU21D connects through SoftwareWire, so that SCL and SDA can be any pin
-// Add pullup resistors between SDA/VCC and SCL/VCC if not yet provided on Module board
-
-// if I2C bus has no pullups externally, you can use internal Pullups instead.
-// Internal pullup resistors are ~30kOHm. Since we are clocking slowly,
-// it works. However, they need to be disabled in sleep mode, because SoftwareWire
-// keeps them enabled even if i2c is ended with end()
-#define USE_I2C_PULLUPS  true // use this for HTU21D in case no Pullups are mounted.
-//#define USE_I2C_PULLUPS false // use this in case external Pullups are used.
 
 /*****************************************************************************/
 /***                  I2C Bus Tools                                        ***/
 /*****************************************************************************/
 static void print_humidity_sensor_values(const char* sensorname, float t, float h)
-{
+{  // in the receiver all messages are subject to mess up the decoder that should store the received values in a csv file
+    /*
     mySerial->print(sensorname);
     mySerial->print(": ");
     mySerial->print(t, 2);
     mySerial->print(" degC, ");
     mySerial->print(h, 2);
     mySerial->println(" %rH");
+*/
 }
 
 
 /*****************************************************************************/
 /***                      Class instances                                  ***/
 /*****************************************************************************/
-RADIO radio;
-Configuration config;
-myMAC Mac(radio, config, (uint8_t*) KEY, mySerial);
-Calibration CalMode(config, mySerial, &Mac, BUILD, (uint8_t*) KEY);
+//RADIO radio;
+RADIO radio(SS,15,0, digitalPinToInterrupt(15)); // for the 5 V1 Boards only!
+Configuration Config;
+myMAC Mac(radio, Config, (uint8_t*) KEY, mySerial);
+Calibration CalMode(Config, mySerial, &Mac, BUILD, (uint8_t*) KEY);
 
+/*****************************************************************************/
 /******                   Periodic Interrupt Timer and RTC setup         *****/
+/*****************************************************************************/
 #include "pitctrl.h"
 PITControl PIT;
 
-ISR(RTC_PIT_vect) 
+ISR(RTC_PIT_vect)
 {
     PIT.interrupthandler();
 }
@@ -226,27 +217,27 @@ uint8_t SHT_Measure(bool enabled, SHTSensor *SHT, float &temperature, float &hum
 {
     uint8_t success=0;
     if (enabled && SHT)
-    {   
+    {
         //mySerial->print("now read sht\n");
-        //pinMode(config.I2CPowerPin, OUTPUT);
-        digitalWrite(config.I2CPowerPin, HIGH);
+        //pinMode(Config.I2CPowerPin, OUTPUT);
+        digitalWrite(Config.I2CPowerPin, HIGH);
         Wire.begin(); // ?? brauchts des?
-        
+
         delay(1);
         SHT->init();
-        
-        if (SHT->readSample()) 
+
+        if (SHT->readSample())
         {
             temperature = SHT->getTemperature();
             humidity    = SHT->getHumidity();
             print_humidity_sensor_values("SHT", temperature, humidity);
             success =  0x48; // according to SHT3X and SHTC3 bit in UseBits
         }
-        else 
+        else
         {
             mySerial->print("Error in readSample()\n");
         }
-        //digitalWrite(config.I2CPowerPin, LOW);
+        //digitalWrite(Config.I2CPowerPin, LOW);
         //I2C_shutdown(); not required on receiver
     }
     return success;
@@ -260,11 +251,11 @@ static bool SHTC3_Init(UseBits &enable)
         SHTC3 = new SHTSensor(SHTSensor::SHTC3);
         mySerial->print("SHTC3: ");
         enable.SHTC3 = SHTC3->init();
-        if (enable.SHTC3) 
+        if (enable.SHTC3)
         {
             mySerial->print("init(): success\n");
-        } 
-        else 
+        }
+        else
         {
             mySerial->print("init(): failed\n");
         }
@@ -275,15 +266,15 @@ static bool SHTC3_Init(UseBits &enable)
 static bool SHT3X_Init(UseBits &enable)
 {
     if (enable.SHT3X)
-    {      
+    {
         SHT3X = new SHTSensor(SHTSensor::SHT3X);
         mySerial->print("SHT3x: ");
         enable.SHT3X = SHT3X->init();
-        if (enable.SHT3X) 
+        if (enable.SHT3X)
         {
             mySerial->print("init(): success\n");
-        } 
-        else 
+        }
+        else
         {
             mySerial->print("init(): failed\n");
         }
@@ -294,15 +285,15 @@ static bool SHT3X_Init(UseBits &enable)
 static bool SHT4X_Init(UseBits &enable)
 {
     if (enable.SHT4X)
-    {      
+    {
         SHT4X = new SHTSensor(SHTSensor::SHT4X);
         mySerial->print("SHT4x: ");
         enable.SHT4X = SHT4X->init();
-        if (enable.SHT4X) 
+        if (enable.SHT4X)
         {
             mySerial->print("init(): success\n");
-        } 
-        else 
+        }
+        else
         {
             mySerial->print("init(): failed\n");
         }
@@ -330,7 +321,7 @@ static bool HTU21D_Init(UseBits &enable)
         {
             mySerial->print("init(): success\n");
         }
-        else 
+        else
         {
             mySerial->print("init(): failed\n");
             delete myHTU21D;
@@ -346,7 +337,7 @@ uint8_t HTU21D_Measure(bool enabled, float &temperature, float &humidity)
     uint8_t success = 0;
     if (enabled && myHTU21D)
     {
-        digitalWrite(config.I2CPowerPin, HIGH);
+        digitalWrite(Config.I2CPowerPin, HIGH);
         if (myHTU21D->begin())
         {
             delay(50);
@@ -355,7 +346,7 @@ uint8_t HTU21D_Measure(bool enabled, float &temperature, float &humidity)
             print_humidity_sensor_values("HTU21D",temperature, humidity);
             success=0x1;
         }
-        //digitalWrite(config.I2CPowerPin, LOW);
+        //digitalWrite(Config.I2CPowerPin, LOW);
         //I2C_shutdown(); // not required in receiver sketch
     }
     return success;
@@ -369,7 +360,7 @@ uint8_t HTU21D_Measure(bool enabled, float &temperature, float &humidity)
 /*****************************************************************************/
 /***                       Pin Change Interrupts                           ***/
 /*****************************************************************************/
-#include "pinchange_interrupt.h"
+#include "PinchangeInterrupt.h"
 uint8_t event_triggered = 0;
 
 // ISR for the Pin change Interrupt
@@ -384,18 +375,18 @@ void wakeUp3() { event_triggered |= 0x8; }
 /*****************************************************************************/
 void activityLed (unsigned char state, unsigned int time = 0)
 {
-  if (config.LedPin)
+  if (Config.LedPin)
   {
-    pinMode(config.LedPin, OUTPUT);
+    pinMode(Config.LedPin, OUTPUT);
     if (time == 0)
     {
-      digitalWrite(config.LedPin, state);
+      digitalWrite(Config.LedPin, state);
     }
     else
     {
-      digitalWrite(config.LedPin, state);
+      digitalWrite(Config.LedPin, state);
       delay(time);
-      digitalWrite(config.LedPin, !state);
+      digitalWrite(Config.LedPin, !state);
     }
   }
 }
@@ -416,33 +407,36 @@ long Vcal_x_ADCcal = 1500L * 1023L;
 #define SAMPLE_ACCUMULATION 0x5
 
 // possible modes are: INTERNAL0V55, INTERNAL1V1, INTERNAL2V5, INTERNAL4V34, INTERNAL1V5
+// possible modes are: INTERNAL0V55, INTERNAL1V1, INTERNAL2V5, INTERNAL4V34, INTERNAL1V5
+
+#if defined (__AVR_ATmega4808__)
 int analogReadInternalRef(uint8_t mode)
 {
   #if defined(ADC0)
-  
+
   // save registers
   uint8_t vref_ctrla = VREF.CTRLA;
   uint8_t adc0_muxpos = ADC0.MUXPOS;
   uint8_t adc0_ctrlb = ADC0.CTRLB;
-  
+
   // setup DACREF in AC0
   VREF.CTRLA = (VREF.CTRLA & ~(VREF_AC0REFSEL_gm)) | (mode << VREF_AC0REFSEL_gp);
-  
 
-  /* Reference should be already set up and should be VDD */
-  // ADC0.CTRLC =0b x101 xxxx
-  
-  
-  /* set input to DACREF0 */
+
+  // Reference should be already set up and should be VDD
+  // ADC0.CTRLC =0b x101 xxxx // 4808
+  // VREF.ADC0REF = VREF_REFSEL_VDD_gc
+
+  // set input to DACREF0
   ADC0.MUXPOS = ADC_MUXPOS_DACREF_gc;
-  
-  /* set sample accumulation*/
+
+  // set sample accumulation
   ADC0.CTRLB = SAMPLE_ACCUMULATION;
-  
-  /* Start conversion */
+
+  // Start conversion
   ADC0.COMMAND = ADC_STCONV_bm;
 
-  /* Wait for result ready */
+  // Wait for result ready
   while (!(ADC0.INTFLAGS & ADC_RESRDY_bm))
     ;
 
@@ -450,17 +444,52 @@ int analogReadInternalRef(uint8_t mode)
   VREF.CTRLA = vref_ctrla;
   ADC0.MUXPOS = adc0_muxpos;
   ADC0.CTRLB = adc0_ctrlb;
-  /* Combine two bytes */
+  // Combine two bytes
   return ADC0.RES;
 
-#else /* No ADC, return 0 */
-  return 0;
-#endif
+    #else /* No ADC, return 0 */
+      return 0;
+    #endif
 }
+
+
+#elif defined (ARDUINO_avrdd)
+int analogReadInternalRef(uint8_t mode)
+{
+    (void) mode;
+    // set reference to VDD
+    VREF.ADC0REF = VREF_REFSEL_VDD_gc;
+
+    // set DAC0REF to 1.024V
+    VREF.DAC0REF = VREF_REFSEL_1V024_gc;
+
+    // set input to DACREF0
+    ADC0.MUXPOS = ADC_MUXPOS_DACREF0_gc;
+
+    // set bitb resolution and conversion mode (single ended)
+     ADC0.CTRLA = ADC_CONVMODE_SINGLEENDED_gc | ADC_RESSEL_10BIT_gc | ADC_ENABLE_bm; //Freerun and enable
+    // set sample accumulation
+    ADC0.CTRLB = SAMPLE_ACCUMULATION;
+
+    // Start conversion
+    ADC0.COMMAND = ADC_STCONV_bm;
+
+    // Wait for result ready
+    while (!(ADC0.INTFLAGS & ADC_RESRDY_bm))
+        ;
+
+    // Combine two bytes
+    return ADC0.RES;
+}
+#endif
 
 long readVcc()
 {
-    return analogReadInternalRef(INTERNAL1V5) / (1<<SAMPLE_ACCUMULATION);
+    #if defined (__AVR_ATmega4808__)
+        return analogReadInternalRef(INTERNAL1V5) / (1<<SAMPLE_ACCUMULATION);
+    #elif defined (ARDUINO_avrdd)
+       return analogReadInternalRef(VREF_REFSEL_1V024_gc);
+    #endif
 }
 
 float getVcc(long vref)
@@ -559,7 +588,7 @@ static bool rolling_code_is_valid(byte nodeid, byte count_new)
 // The first 6 Bytes are printable characters.
 // the last 4 Bystes are the actual serial number.
 
-typedef struct 
+typedef struct
 {
     char prefix[7];
     union
@@ -570,37 +599,60 @@ typedef struct
 } SerialNumber;
 
 
- 
+
 void print_serial_number()
 {
-    SerialNumber SN;
     uint8_t* sernum_addr = (uint8_t*)&SIGROW.SERNUM0;
     int i;
+    Serial.print("Serial Number ");
+    #if defined (ARDUINO_avrdd)
+
+    #if defined __AVR_AVR64DD32__
+    Serial.print("AVR64DD32: ");
+    #elif defined __AVR_AVR64DD28__
+    Serial.print("AVR64DD28: ");
+    #else
+    Serial.print("AVRxxDDxx: ");
+    #endif
+    // AVRxxDDxx have 16 Bytes
+    for (i=0;  i<16; i++)
+    {
+        uint8_t sni = *sernum_addr;
+        Serial.print(sni,HEX);
+        Serial.print(" ");
+        sernum_addr++;
+    }
+
+
+    #else
+    #if defined (__AVR_ATmega4808__)
+    Serial.print("ATMEGA4808: ");
+    #endif
+    SerialNumber SN;
     for (i=0; i<6; i++)
     {
         SN.prefix[i] = (char) *sernum_addr;
         sernum_addr++;
     }
     SN.prefix[6]=0;
-   
+
     for (i=0; i<4; i++)
     {
         SN.sn_char[i] = *sernum_addr;
         sernum_addr++;
     }
 
-    Serial.print("Serial Number: ");
-    //Serial.printf(" %0.10li\r\n", SN.sn); // printf kostet mich 1.5 kByte
     Serial.print(SN.prefix); Serial.print(" "); Serial.println(SN.sn);
+    #endif
 }
 /*****************************************************************************/
 
 
 
 unsigned long MeasurementIntervall_ms;
-unsigned long last_measurement_millis=0; 
+unsigned long last_measurement_millis=0;
 
-#if NUM_CHANNELS >1 
+#if NUM_CHANNELS >1
 float frec[NUM_CHANNELS];
 #endif
 
@@ -617,8 +669,6 @@ void setup()
     pinConfigure(1, PIN_DIR_INPUT, PIN_PULLUP_ON, PIN_INPUT_ENABLE);
     mySerial->swap(SERIAL_SWAP);
     mySerial->begin(SERIAL_BAUD);
-    
-    //mySerial->begin(SERIAL_BAUD);
     mySerial->println(SKETCHNAME);
 
 
@@ -627,26 +677,38 @@ void setup()
     /***                     ***/
     CalMode.configure();
 
+
+    /*** Print Logo ***/
+    mySerial->println("  _______   _   _   _           ___");
+
+    mySerial->println(" |__   __| (_) | \\ | |         |__ \\");
+
+    mySerial->println("    | |     _  |  \\| |   ___      ) |");
+    mySerial->println("    | |    | | | . ` |  / _ \\    / / ");
+    mySerial->println("    | |    | | | |\\  | | (_) |  / /_");
+    mySerial->println("    |_|    |_| |_| \\_|  \\___/  |____|");
+    mySerial->println("    by nurazur\r\n");
+
     print_serial_number();
-    
+
     /***********************************************************/
     // normal initialization starts here
     // Dont load eeprom data here, it is done in the configuration (boot) routine. EEPROM is encrypted.
-    
-    MeasurementIntervall_ms = config.Senddelay *8000L; // senddelay = Intervall in ms to measure Temp and adjust Radio Frequency
-       
-    Vcal_x_ADCcal = (long)config.VccAtCalmV * config.AdcCalValue;
-    
-    
+
+    MeasurementIntervall_ms = Config.Senddelay *8000L; // senddelay = Intervall in ms to measure Temp and adjust Radio Frequency
+
+    Vcal_x_ADCcal = (long)Config.VccAtCalmV * Config.AdcCalValue;
+
+
     // this is an attempt to implement basic frequency hopping.
     // due to synthesizer settle times, some frames may be lost
-    #if NUM_CHANNELS >1 
-    frec[0]= config.frequency;
+    #if NUM_CHANNELS >1
+    frec[0]= Config.frequency;
     frec[1]= 866.0;
     frec[2]= 867.0;
     frec[3]= 868.0;
     #endif
-    
+
     /*********************************************************/
     /*************  INITIALIZE ACTOR MODULE ******************/
     /*********************************************************/
@@ -688,7 +750,7 @@ void setup()
         {
             pinMode(actions[i].pin, OUTPUT);
             digitalWrite(actions[i].pin, actions[i].default_val);
-            
+
             Serial.print("\nnode :"); Serial.println(actions[i].node);
             Serial.print("mask :"); Serial.println(actions[i].mask);
             Serial.print("pin :"); Serial.println(actions[i].pin);
@@ -698,16 +760,16 @@ void setup()
         }
         */
     }
-    
+
     //for (int j=0; j <=15; j++)
     //{Serial.print(j); Serial.print(" "); Serial.print(int(pow(1.982864, j)));Serial.print(" "); Serial.println(int(pow(1.982864, j))*0.125,3); }
     /*********************************************************/
     PIT.init();
     PIT.disable();
-    
-    /************************************/
+
+    /***                              ***/
     /***     Pin Change Interrupts    ***/
-    /************************************/
+    /***                              ***/
 
     /* MegacoreX common.h */
 
@@ -723,60 +785,70 @@ void setup()
     // #define OUTPUT         1
     // #define INPUT_PULLUP   2
 
-    // in this sketch we need: 
+    // in this sketch we need:
     // FALLING -> 0
     // RISING -> 1
     // CHANGE -> CHANGE
 
     // only Pins Px2 and Px6 are fully asynchronuous, these are pins 10,14,18,22 (PC2, PD2, PD6, PF2)
-    
-    if (config.PCI0Pin >=0)
+
+    if (Config.PCI0Pin >=0)
     {
-        pinMode(config.PCI0Pin, config.PCI0Mode);
-        register_pci(0, config.PCI0Pin, wakeUp0, config.PCI0Trigger);
+        pinMode(Config.PCI0Pin, Config.PCI0Mode);
+        register_pci(0, Config.PCI0Pin, wakeUp0, Config.PCI0Trigger);
+        #if DEBUG >= 1
+        mySerial->print("PCI0pin:"); mySerial->print((uint8_t)Config.PCI0Pin);mySerial->print(", PCI0Mode: "); mySerial->print((uint8_t)Config.PCI0Mode);mySerial->print(", PCI0Trigger: "); mySerial->println((uint8_t)Config.PCI0Trigger);
+        #endif
     }
 
-    if (config.PCI1Pin >=0)  
+    if (Config.PCI1Pin >=0)
     {
-        pinMode(config.PCI1Pin, config.PCI1Mode);
-        register_pci(1, config.PCI1Pin, wakeUp1, config.PCI1Trigger);
-    }
-  
-    if (config.PCI2Pin >=0)  
-    {
-        pinMode(config.PCI2Pin, config.PCI2Mode);
-        register_pci(2, config.PCI2Pin, wakeUp2, config.PCI2Trigger);
-    }
-  
-    if (config.PCI3Pin >=0)  
-    {
-        pinMode(config.PCI3Pin, config.PCI3Mode);
-        register_pci(3, config.PCI3Pin, wakeUp3, config.PCI3Trigger);
+        pinMode(Config.PCI1Pin, Config.PCI1Mode);
+        register_pci(1, Config.PCI1Pin, wakeUp1, Config.PCI1Trigger);
     }
 
+      if (Config.PCI2Pin >=0)
+      {
+          pinMode(Config.PCI2Pin, Config.PCI2Mode);
+          register_pci(2, Config.PCI2Pin, wakeUp2, Config.PCI2Trigger);
+      }
 
-    
+      if (Config.PCI3Pin >=0)
+      {
+          pinMode(Config.PCI3Pin, Config.PCI3Mode);
+          register_pci(3, Config.PCI3Pin, wakeUp3, Config.PCI3Trigger);
+      }
+        // initialize PIR Sensor, if configured
+        // it will be still for 3 cycles.
+        // PIR shares the event flag with PCI1. PCI1 remains active, if specified.
+        //PIR.init();
+
+    sei();
+
+
     /* start i2c bus */
-    pinMode(config.I2CPowerPin, OUTPUT);  // set power pin for Sensor to output
-    digitalWrite(config.I2CPowerPin, HIGH);
+    pinMode(Config.I2CPowerPin, OUTPUT);  // set power pin for Sensor to output
+    digitalWrite(Config.I2CPowerPin, HIGH);
     delay(1);
-    
+
     UseBits* u;
-    u = (UseBits*)&config.SensorConfig;
+    u = (UseBits*)&Config.SensorConfig;
+
     Wire.swap(0);
-    Wire.begin(); 
+    Wire.begin();
     HTU21D_Init(*u);
     SHT3X_Init(*u);
     SHTC3_Init(*u);
     SHT4X_Init(*u);
-    
+
+
      /***  INITIALIZE RADIO MODULE ***/
-    mySerial->print("RF Chip = "); config.IsRFM69HW ?    mySerial->print("RFM69HCW") : mySerial->print("RFM69CW");  mySerial->println();
-    mySerial->print ("FDEV_STEPS: ");mySerial->print(config.FedvSteps);mySerial->println();
+    mySerial->print("RF Chip = "); Config.IsRFM69HW ?    mySerial->print("RFM69HCW") : mySerial->print("RFM69CW");  mySerial->println();
+    mySerial->print ("FDEV_STEPS: ");mySerial->print(Config.FedvSteps);mySerial->println();
 
     Mac.radio_begin();  // re-initialize radio
 
-  if (config.LedPin)
+  if (Config.LedPin)
   {
       activityLed(1, 1000); // LED on
   }
@@ -802,21 +874,21 @@ void loop()
             {
                 // This is the standard protocol for TiNo Sensors / Actors, good for HTU21D, SHT2x, SHT3x, SHTC3, SHT4x1 DS18B20 or BME280 plus an LDR
                 Payload *pl = (Payload*) Mac.rxpacket.payload;
-                
+
                 mySerial->print("v=");  mySerial->print(pl->supplyV);
                 mySerial->print("&c=");  mySerial->print(pl->count);
                 mySerial->print("&t=");  mySerial->print((pl->temp - 1000)*4);
                 mySerial->print("&h=");  mySerial->print(int(pl->humidity/2.0*100));
                 mySerial->print("&f=");  mySerial->print(pl->flags,HEX);
-                
+
                 if (Mac.rxpacket.datalen >=12)
                 {
                     mySerial->print("&p=");  mySerial->print(pl->pressure);
                     mySerial->print("&br=");  mySerial->print(pl->brightness);
                 }
-                
+
                 extract_interrupts(pl->flags);
-                
+
                 //bool rolling_code_ok = rolling_code_is_valid(pl->nodeid, pl->count);
                 Serial.flush();
                 //if (Mac.rxpacket.errorcode >=0 && rolling_code_ok)
@@ -826,7 +898,7 @@ void loop()
                 }
                 //mySerial->print("&sy=");
                 //rolling_code_ok ? mySerial->print("1") : mySerial->print("0") ;
-                
+
             }
 
             else if ((Mac.rxpacket.payload[FLAGS] >> 5) == 0x2) // TiNo ACK Packet: 010x xxxx
@@ -847,7 +919,7 @@ void loop()
                 {
                     case 1:
                         // string packet with length 16 (so we've got 13/5 bytes effective)
-                        config.FecEnable ? Mac.rxpacket.payload[8] = 0 : Mac.rxpacket.payload[16] = 0;
+                        Config.FecEnable ? Mac.rxpacket.payload[8] = 0 : Mac.rxpacket.payload[16] = 0;
                         mySerial->print((char*)(Mac.rxpacket.payload+ALT_PACKET_TYPE+1)); mySerial->print(";");
                         break;
                     case 2:
@@ -877,7 +949,7 @@ void loop()
                             mySerial->print("&t=");   mySerial->print((pl->temp - 1000)*4);
                             mySerial->print("&t1=");  mySerial->print((pl->temp1 - 1000)*4);
                             mySerial->print("&t2=");  mySerial->print((pl->temp2 - 1000)*4);
-                            
+
                             extract_interrupts(pl->flags);
                         }
                         break;
@@ -907,7 +979,7 @@ void loop()
                                     break;
                                 case pressure:
                                     mySerial->print("&p=");  mySerial->print(pl->value);
-                                    break;                                
+                                    break;
                                 case brightness:
                                     mySerial->print("&br=");  mySerial->print(pl->value);
                                     break;
@@ -933,7 +1005,7 @@ void loop()
             }
             mySerial->print("&rssi=");    mySerial->print(int(Mac.rxpacket.RSSI*10));
             //mySerial->print("&fo=");    mySerial->print(int16_t(Mac.rxpacket.FEI*radio.FSTEP), DEC); // need to multiply with the resolution of the PLL (in Hz), but I don't need fractions of a Hz
-            if (config.FecEnable) { mySerial->print("&be=");  mySerial->print(Mac.rxpacket.numerrors); }
+            if (Config.FecEnable) { mySerial->print("&be=");  mySerial->print(Mac.rxpacket.numerrors); }
             mySerial->println("");
             Mac.rxpacket.payload[NODEID] =0;
         }
@@ -950,37 +1022,37 @@ void loop()
             errors[1] = "-2: data length does not match";
             errors[2] = "-3: not my message or address corrupted";
             int8_t code = -(Mac.rxpacket.errorcode+1);
-            
+
             mySerial->print("Error Code: "); mySerial->print(errors[code]);
             */
         }
     }
-    
+
     /***  Frequency hopping ***/
     #if NUM_CHANNELS > 1
     if(radio.noRx())
     {
         frec_counter++;
         if (frec_counter >= NUM_CHANNELS) frec_counter=0;
-        radio.switch_frequencyMHz(frec[frec_counter]); 
+        radio.switch_frequencyMHz(frec[frec_counter]);
         delayMicroseconds(100); // wait for the synthesizer to settle.
     }
     #endif
-    
-    
-    
-    if (MeasurementIntervall_ms > 0) // local measurement 
+
+
+
+    if (MeasurementIntervall_ms > 0) // local measurement
     {
         if ((millis() > last_measurement_millis) || event_triggered)
         {
             last_measurement_millis = millis() + MeasurementIntervall_ms;
-            
+
             // measure temperature
             float t, h=0;
             UseBits *u;
-            u = (UseBits*)&config.SensorConfig;
-            
-            
+            u = (UseBits*)&Config.SensorConfig;
+
+
             uint8_t success =0;
             success |=  HTU21D_Measure(u->HTU21D, t,h);
             success |= SHT_Measure(u->SHT3X, SHT3X, t, h);
@@ -988,10 +1060,10 @@ void loop()
             success |= SHT_Measure(u->SHT4X, SHT4X, t, h);
             if (!success)
             {
-                t = radio.readTemperature(0) + config.radio_temp_offset/10.0;
+                t = radio.readTemperature(0) + Config.radio_temp_offset/10.0;
             }
-        
-            mySerial->print(config.Nodeid); mySerial->print(" ");
+
+            mySerial->print(Config.Nodeid); mySerial->print(" ");
             mySerial->print("v=");   mySerial->print((uint16_t)getVcc(Vcal_x_ADCcal));
             mySerial->print("&c=");  mySerial->print(++count);
             mySerial->print("&t=");  mySerial->print(t*100,0);
@@ -1003,27 +1075,27 @@ void loop()
             }
             else
                 mySerial->print("1"); // heartbeat
-            
+
             // adjust radio frequencuy according to FT table, if applicable
             // in Atmega4808 the FT table is not availabe from eeprom.
             // mySerial->println("Temperature Measurement and Frequency Tuning.");
             /*
-            if (config.UseRadioFrequencyCompensation)
+            if (Config.UseRadioFrequencyCompensation)
             {
-                int fo_steps = config.FedvSteps - Mac.radio_calc_temp_correction(t);
-                radio.setFrequency((config.frequency * 1000000)/radio.FSTEP + fo_steps );
+                int fo_steps = Config.FedvSteps - Mac.radio_calc_temp_correction(t);
+                radio.setFrequency((Config.frequency * 1000000)/radio.FSTEP + fo_steps );
                 mySerial->print("&fo=");  mySerial->print((int)(fo_steps*radio.FSTEP));
             }
             */
-            
-            
+
+
             mySerial->println();
         }
     }
-    
+
     if (event_triggered) // a local Port change interrupt occured.
     {
-        doaction(config.Nodeid, event_triggered, actions, num_actions, &PIT);
+        doaction(Config.Nodeid, event_triggered, actions, num_actions, &PIT);
         event_triggered =0;
     }
 }

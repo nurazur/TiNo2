@@ -1,7 +1,11 @@
 
 #include <wiring_private.h>
-#include "pinchange_interrupt.h"
+#include "PinchangeInterrupt.h"
 
+
+extern uint8_t event_triggered;
+
+#if defined (MEGACOREX)
 // max numbers of pin change interrupts
 #define MAXNUMPCI 4
 
@@ -60,6 +64,8 @@ void wakeUp0_pci()
     {
         pci_isr[0]();
     }
+    else
+        event_triggered |= 0x80; // indicate its a false wakeup reason
 }
 
 void wakeUp1_pci()
@@ -68,6 +74,8 @@ void wakeUp1_pci()
     {
         pci_isr[1]();
     }
+    else
+        event_triggered |= 0x80;
 }
 
 void wakeUp2_pci()
@@ -76,6 +84,8 @@ void wakeUp2_pci()
     {
         pci_isr[2]();
     }
+    else
+        event_triggered |= 0x80;
 }
 
 void wakeUp3_pci()
@@ -84,4 +94,8 @@ void wakeUp3_pci()
     {
         pci_isr[3]();
     }
+    else
+        event_triggered |= 0x80;
 }
+
+#endif

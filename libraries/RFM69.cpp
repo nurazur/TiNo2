@@ -521,7 +521,7 @@ void RFM69::select()
 {
     STATUSREG= SREG;
     noInterrupts();
-    #if defined(__AVR_ATtiny84__) || defined(__AVR_ATtiny44__) || defined(__AVR_ATmega3208__) || defined(__AVR_ATmega4808__)// tiny doesn't set SPI settings like this
+    #if defined(__AVR_ATtiny84__) || defined(__AVR_ATtiny44__) || defined(MEGACOREX) || defined(ARDUINO_avrdd)// tiny doesn't set SPI settings like this
     #else // set SPI settings if not on tiny
         // save current SPI settings
         _SPCR = SPCR;
@@ -541,7 +541,7 @@ void RFM69::select()
 void RFM69::unselect()
 {
     digitalWrite(_slaveSelectPin, HIGH);
-    #if defined(__AVR_ATtiny84__) || defined(__AVR_ATtiny44__) || defined(__AVR_ATmega3208__) || defined(__AVR_ATmega4808__)
+    #if defined(__AVR_ATtiny84__) || defined(__AVR_ATtiny44__) || defined(MEGACOREX) || defined(ARDUINO_avrdd)
     #else
         //restore SPI settings to what they were before talking to RFM69
         SPCR = _SPCR;

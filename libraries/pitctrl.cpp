@@ -110,7 +110,12 @@ void PITControl::init(uint8_t ClockGen)
         while (RTC.STATUS > 0);
 
         // select 32.768 kHz external crystal oscillator
+        #if defined (MEGACOREX)
         RTC.CLKSEL = RTC_CLKSEL_TOSC32K_gc;
+        #elif defined (ARDUINO_avrdd)
+        //RTC.CLKSEL = RTC_CLKSEL_XTAL32K_gc; // strange compiler error
+        RTC.CLKSEL = 0x02;
+        #endif
     }
 
     
