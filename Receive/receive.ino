@@ -97,8 +97,8 @@ static void print_humidity_sensor_values(const char* sensorname, float t, float 
 /*****************************************************************************/
 /***                      Class instances                                  ***/
 /*****************************************************************************/
-//RADIO radio;
-RADIO radio(SS,15,0, digitalPinToInterrupt(15)); // for the 5 V1 Boards only!
+RADIO radio;
+//RADIO radio(SS,15,0, digitalPinToInterrupt(15)); // for the 5 V1 Boards only!
 Configuration Config;
 myMAC Mac(radio, Config, (uint8_t*) KEY, mySerial);
 Calibration CalMode(Config, mySerial, &Mac, BUILD, (uint8_t*) KEY);
