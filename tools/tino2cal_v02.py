@@ -949,6 +949,7 @@ def file2eeprom(str2parse, serial):
                         serial.write(outstr)
                     elif items[0] == pciconfig[1] and 0 <= val and val <= 2: #MODE
                         print ("PCI%i MODE, value old: %i " % (pcinum, ((pciconfig_val[pcinum]>>3)&0x3)  ))
+                        pciconfig_val[pcinum] &= 0x07 # leave trigger bits , all others set to 0
                         pciconfig_val[pcinum] |= val<<3
                         #print (pciconfig_val[pcinum])
                         outstr = b"w,%i,%i\n" % (addr, pciconfig_val[pcinum])
@@ -1284,7 +1285,8 @@ if __name__ == '__main__':
 
                 # load frequency correction table into EEPROM. Values are calculated by Python from cubic parameters
                 elif inputstr == b'ft' or inputstr == b'frequency_table':
-                    write_eeprom_frequency_correction(port)
+                    #write_eeprom_frequency_correction(port)
+                    pass
 
                 # get eeprom content and save in file
                 elif inputstr[:2] == b'g,' or inputstr[:4] == b'get,':

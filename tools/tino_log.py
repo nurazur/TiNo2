@@ -25,7 +25,7 @@ import atexit
 
 BAUDRATE= 230400
 #SERIAL_PORT = '/dev/ttyAMA0'
-SERIAL_PORT = 'COM5'
+SERIAL_PORT = 'COM4'
 
 
 #default filename for valid records
