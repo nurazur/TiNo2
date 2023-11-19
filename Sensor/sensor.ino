@@ -80,7 +80,7 @@
         support AVR64DD32 and AVR64DD28 MCU's using DxCore
 */
 // Core:        for 4808: MegaCoreX (https://github.com/MCUdude/MegaCoreX)
-// Core:        for AVRxxDDyy DxCore (https://github.com/SpenceKonde/DxCore)
+// Core:        for AVRxxDDxx DxCore (https://github.com/SpenceKonde/DxCore)
 
 #include "Arduino.h"
 #include <avr/io.h>
@@ -91,18 +91,14 @@
 #include "PacketHandler.h"
 #include "SPI.h"
 #include "PinchangeInterrupt.h"
+#include "print_things.h"
+#include "pitctrl.h"
 
-#define FILENAME "TiNo2 myTiNo2V3.ino 25/10/2023"
+#define FILENAME "TiNo2 V2.4  18/11/2023"
 #define BUILD 11
 #define USE_RADIO
 #define RADIO_SPI_PINSWAP 0
 #define SEND_BURST
-
-// Battery Test uses a common payload structure to transmit Battery Voltage
-// in idle mode and a second measurement under load conditions.
-// we add 128 to the nodeid to distinct between the 2 formats.
-// count is extended to 3 Bytes by using the flag byte and the humidity byte
-// this is for engineering and test purposes only!
 //#define BATTERYTEST
 
 PacketHandler *TiNo=NULL;
@@ -114,13 +110,11 @@ PacketHandler *TiNo=NULL;
 /*****************************************************************************/
 /***   Radio Driver Instance                                               ***/
 /*****************************************************************************/
-#include "RFM69.h"  // select this radio driver for RFM69HCW and RFM69CW Modules from HopeRF
-RADIO radio;
+#include "RFM69.h"
 
-// only for the few V1 TiNo2 boards:
-//RADIO radio(SS,15,0, digitalPinToInterrupt(15));
+RADIO radio;
 /*****************************************************************************/
-/***  EEPROM Access  and device calibration                                ***/
+/***  EEPROM Access  and device calibration / Configuration                ***/
 /*****************************************************************************/
 #include "configuration.h"
 #include "calibrate.h"
@@ -134,7 +128,6 @@ RADIO radio;
 // - set the varable ENCRYPTION_ENABLE to 1 in the EEPROM, at runtime in Cfg.EncryptionEnable
 
 #define KEY     "TheQuickBrownFox"
-
 /*****************************************************************************/
 /***                   Device specific Configuration                       ***/
 /*****************************************************************************/
@@ -177,141 +170,61 @@ ISR(RTC_PIT_vect)
     watchdog_counter++;
 }
 
+
 // Input sense configuration (ISC)
 void disablePinISC(uint8_t pin)
 {
   PORT_t *port = digitalPinToPortStruct(pin);
-  /* Get bit position for getting pin ctrl reg */
+  // Get bit position for getting pin ctrl reg
   uint8_t bit_pos = digitalPinToBitPosition(pin);
 
-  /* Calculate where pin control register is */
+  // Calculate where pin control register is
   volatile uint8_t *pin_ctrl_reg = getPINnCTRLregister(port, bit_pos);
 
-  /* Disable ISC */
+  // Disable ISC
   *pin_ctrl_reg = PORT_ISC_INPUT_DISABLE_gc;
 }
 
 /*****************************************************************************/
-/***                  I2C Bus Tools                                        ***/
+/******                   Periodic Interrupt Timer and RTC setup         *****/
 /*****************************************************************************/
 
-
-static void print_humidity_sensor_values(const char* sensorname, float t, float h)
-{
-    mySerial->print(sensorname);
-    mySerial->print(": ");
-    mySerial->print(t, 2);
-    mySerial->print(" degC, ");
-    mySerial->print(h, 2);
-    mySerial->println(" %rH");
-}
+PITControl PIT;
 
 
-static void I2C_shutdown(void)
-{
-    if (Config.I2CPowerPin > 0)
-        digitalWrite(Config.I2CPowerPin, LOW);
+/*****************************************************************************/
+/***                  I2C Bus Tools                                        ***/
+/*****************************************************************************/
+#include "i2c_common.h"
 
-    #if defined (__AVR_ATmega4808__)
-    if ((PORTMUX.TWISPIROUTEA & 0x30) != 0x10) // only default (0) and ALT1 (1) is supported, other values should fall back to default.
-    {
-        pinMode(PIN_WIRE_SDA,INPUT);
-        disablePinISC(PIN_WIRE_SDA);
-
-        pinMode(PIN_WIRE_SCL,INPUT);
-        disablePinISC(PIN_WIRE_SCL);
-    }
-    else
-    {
-        pinMode(PIN_WIRE_SDA_PINSWAP_1,INPUT);
-        disablePinISC(PIN_WIRE_SDA_PINSWAP_1);
-
-        pinMode(PIN_WIRE_SCL_PINSWAP_1,INPUT);
-        disablePinISC(PIN_WIRE_SCL_PINSWAP_1);
-    }
-
-    #elif defined ARDUINO_avrdd
-    pinMode(SDA_NOW,INPUT);
-    disablePinISC(SDA_NOW);
-
-    pinMode(SCL_NOW,INPUT);
-    disablePinISC(SCL_NOW);
-    #endif
-}
-
-static void I2C_pullup(void)
-{
-    #if defined (__AVR_ATmega4808__)
-    if ((PORTMUX.TWISPIROUTEA & 0x30) != 0x10) // only default (0) and ALT1 (1) is supported, other values should fall back to default.
-    {
-        pinMode(PIN_WIRE_SDA,INPUT_PULLUP);
-        pinMode(PIN_WIRE_SCL,INPUT_PULLUP);
-    }
-    else
-    {
-        pinMode(PIN_WIRE_SDA_PINSWAP_1,INPUT_PULLUP);
-        pinMode(PIN_WIRE_SCL_PINSWAP_1,INPUT_PULLUP);
-    }
-
-    #elif defined (ARDUINO_avrdd)
-    pinMode(SDA_NOW,INPUT_PULLUP);
-    pinMode(SCL_NOW,INPUT_PULLUP);
-    #endif
-
-    if (Config.I2CPowerPin >0)
-    {
-        digitalWrite(Config.I2CPowerPin, HIGH);
-    }
-}
 
 /*****************************************************************************/
 /***              SHT3x and SHTC3  Humidity Sensor                         ***/
 /*****************************************************************************/
+#include "sht_sensors.h"
+
+HumiditySensor SensorData;
+
 SHTSensor *SHT3X=NULL;
 SHTSensor *SHTC3=NULL;
 SHTSensor *SHT4X=NULL;
 
-uint8_t SHT_Measure(bool enabled, SHTSensor *SHT, float &temperature, float &humidity)
+static bool SHT4X_Init(UseBits &enable)
 {
-    uint8_t success=0;
-    if (enabled && SHT)
+    if (enable.SHT4X)
     {
-        I2C_pullup();
-        delay(1);
-
-        if(SHT->init()) // reads T and rH after initialization / wakeup
-        {
-            temperature = SHT->getTemperature();
-            humidity    = SHT->getHumidity();
-            print_humidity_sensor_values("SHT", temperature, humidity);
-            success =  0x48; // according to SHT3X and SHTC3 bit in UseBits
-        }
-        else
-        {
-            mySerial->print("Error in SHT.init()\n");
-        }
-
-        I2C_shutdown();
+        enable.SHT4X = SHT_Init(enable.SHT4X, SHT4X, SHTSensor::SHT4X); // just an example how to use the general SHT initialization
+        print_init_result(enable.SHT4X, "SHT4X");
     }
-    return success;
+    return enable.SHT4X;
 }
-
 
 static bool SHTC3_Init(UseBits &enable)
 {
     if (enable.SHTC3)
     {
-        SHTC3 = new SHTSensor(SHTSensor::SHTC3);
-        mySerial->print("SHTC3: init(): ");
-        enable.SHTC3 = SHTC3->init();
-        if (enable.SHTC3)
-        {
-            mySerial->print("success\n");
-        }
-        else
-        {
-            mySerial->print("failed\n");
-        }
+        enable.SHTC3 = SHT_Init(enable.SHTC3, SHTC3, SHTSensor::SHTC3);
+        print_init_result(enable.SHTC3, "SHTC3");
     }
     return enable.SHTC3;
 }
@@ -320,39 +233,12 @@ static bool SHT3X_Init(UseBits &enable)
 {
     if (enable.SHT3X)
     {
-        SHT3X = new SHTSensor(SHTSensor::SHT3X);
-        mySerial->print("SHT3x: init(): ");
-        enable.SHT3X = SHT3X->init();
-        if (enable.SHT3X)
-        {
-            mySerial->print("success\n");
-        }
-        else
-        {
-            mySerial->print("failed\n");
-        }
+        enable.SHT3X = SHT_Init(enable.SHT3X, SHT3X, SHTSensor::SHT3X);
+        print_init_result(enable.SHT3X, "SHT3X");
     }
    return enable.SHT3X;
 }
 
-static bool SHT4X_Init(UseBits &enable)
-{
-    if (enable.SHT4X)
-    {
-        SHT4X = new SHTSensor(SHTSensor::SHT4X);
-        mySerial->print("SHT4x: init(): ");
-        enable.SHT4X = SHT4X->init();
-        if (enable.SHT4X)
-        {
-            mySerial->print("success\n");
-        }
-        else
-        {
-            mySerial->print("failed\n");
-        }
-    }
-   return enable.SHT4X;
-}
 
 
 
@@ -368,15 +254,11 @@ static bool HTU21D_Init(UseBits &enable)
     if (enable.HTU21D)
     {
         myHTU21D = new HTU21D(HTU21D_RES_RH12_TEMP14);
-        mySerial->print("HTU21D: init(): ");
         enable.HTU21D = myHTU21D->begin();
-        if (enable.HTU21D)
+        print_init_result(enable.HTU21D, "HTU21D");
+
+        if (!enable.HTU21D)
         {
-            mySerial->print("success\n");
-        }
-        else
-        {
-            mySerial->print("failed\n");
             delete myHTU21D;
             myHTU21D = NULL;
         }
@@ -385,152 +267,40 @@ static bool HTU21D_Init(UseBits &enable)
 }
 
 
-uint8_t HTU21D_Measure(bool enabled, float &temperature, float &humidity)
+uint8_t HTU21D_Measure(uint8_t enabled, HTU21D *htu21d, HumiditySensor &Data);
+
+uint8_t HTU21D_Measure(uint8_t enabled, HTU21D *htu21d, HumiditySensor &Data)
 {
     uint8_t success = 0;
-    if (enabled && myHTU21D)
+    if (enabled && htu21d)
     {
-        digitalWrite(Config.I2CPowerPin, HIGH);
-        if (myHTU21D->begin())
+        I2C_pullup(Data.PowerPin);
+
+        if (htu21d->begin())
         {
             delay(50);
-            temperature = myHTU21D->readTemperature();
-            humidity =    myHTU21D->readCompensatedHumidity(temperature);
-            print_humidity_sensor_values("HTU21D",temperature, humidity);
-            success=0x1;
+            Data.temperature = htu21d->readTemperature();
+            Data.humidity =    htu21d->readCompensatedHumidity(Data.temperature);
+            success = enabled;
         }
-        //digitalWrite(Config.I2CPowerPin, LOW);
-        I2C_shutdown();
+
+        I2C_shutdown(Data.PowerPin);
     }
     return success;
 }
-/**********     One-Wire and DS18B20     **********/
-#include <DallasTemperature.h>       // GNU Lesser General Public License v2.1 or later
-#include <OneWire.h>              // license terms not clearly defined.
-
-OneWire *oneWire=NULL;
-DallasTemperature *ds18b20=NULL;
-
-static uint8_t DS18B20_Start(DallasTemperature *sensor, byte PowerPin);
-
-// One-Wire DS18B20 start-up sequence
-static uint8_t DS18B20_Start(DallasTemperature *sensor, byte PowerPin)
-{
-    if (PowerPin <=25)
-    {
-        pinMode(PowerPin, OUTPUT); // set power pin for DS18B20 to output
-        digitalWrite(PowerPin, HIGH); // turn DS18B20 sensor on
-        delay(10); // Allow 10ms for the sensor to be ready
-        sensor->begin();
-        //sensor->setResolution(10); //Resolutiuon is 0.125 deg, absolutely sufficient!
-        delay(10); // Allow 10ms for the sensor to be ready
-        return sensor->getDeviceCount();
-    }
-    else
-        return 0;
-}
-
-static void DS18B20_Stop(byte PowerPin)
-{
-    digitalWrite(PowerPin, LOW); // turn Sensor off to save power
-}
 
 
+/*****************************************************************************/
+/***              One-Wire and DS18B20 Temperature Sensors                 ***/
+/*****************************************************************************/
+// using DS18B20 is not recommended, the conversion time takes much longer
+// (700-900 ms) than with I2C base sensors (<50ms).
+// Commenting out the header will remove the entire DS18B20 Module from the Sketch.
+#include "ds18b20.h"
 
-
-static uint8_t DS18B20_Init(UseBits &enable)
-{
-    uint8_t num_devices =0;
-    if(enable.DS18B20)
-    {
-        //--------------------------------------------------------------------------
-        // test if 1-wire devices are present
-        //--------------------------------------------------------------------------
-        pinMode(Config.OneWirePowerPin, OUTPUT); // set power pin for DS18B20 to output
-        digitalWrite(Config.OneWirePowerPin, HIGH); // turn DS18B20 sensor on
-        delay(10); // Allow 10ms for the sensor to be ready
-
-        // enable the data pin as input (at power up, we disable all GPIO's for power saving porposes)
-        pinConfigure(Config.OneWireDataPin, PIN_DIR_INPUT, PIN_PULLUP_OFF, PIN_INPUT_ENABLE);
-
-        // Start up the library
-        oneWire= new OneWire(Config.OneWireDataPin);
-
-        ds18b20 = new DallasTemperature(oneWire);
-
-        num_devices = DS18B20_Start(ds18b20, Config.OneWirePowerPin);
-        if (num_devices == 0)
-        {
-            delete ds18b20;
-            ds18b20 = NULL;
-            DS18B20_Stop(Config.OneWirePowerPin);
-            enable.DS18B20 = 0;
-            mySerial->print("no ");
-
-        }
-        else
-        {
-            mySerial->print(num_devices, DEC);
-        }
-
-        mySerial->println(" DS18B20 found.");
-        //mySerial->print("power pin: "); mySerial->println(Config.OneWirePowerPin);
-        //mySerial->print("data  pin: "); mySerial->println(Config.OneWireDataPin);
-        mySerial->flush();
-    }
-    return num_devices; // this allows to adjust packet type at initialization. if only one device, packet type= 0;
-}
-
-static uint16_t encode_temp(float t_raw)
-{
-    return floor(t_raw * 25 + 1000.5);
-}
-
-static uint8_t encode_humidity(float h_raw)
-{
-    return (uint8_t) floor(h_raw *2 +0.5);
-}
-
-
-static uint8_t DS18B20_Measure(bool enable, uint16_t *temp)
-{
-    float temperature=-40;
-    const char *unit= " degC";
-    uint8_t num_devices =0;
-    if (enable && ds18b20)
-    {
-        num_devices = DS18B20_Start(ds18b20, Config.OneWirePowerPin);
-        //mySerial->print("Num DS18B20: "); mySerial->println(num_devices);
-
-        if (num_devices > 0)
-        {
-            ds18b20->requestTemperatures();
-            switch (num_devices)
-            {
-                case 3:
-                    temperature = ds18b20->getTempCByIndex(2);
-                    temp[2] = encode_temp(temperature);
-                    mySerial->print("T2: ");mySerial->print(temperature); mySerial->println(unit);
-                     __attribute__ ((fallthrough));
-                case 2:
-                    temperature = ds18b20->getTempCByIndex(1);
-                    temp[1] = encode_temp(temperature);
-                    mySerial->print("T1: ");mySerial->print(temperature); mySerial->println(unit);
-                     __attribute__ ((fallthrough));
-                case 1:
-                    temperature = ds18b20->getTempCByIndex(0);
-                    temp[0] = encode_temp(temperature);
-                    mySerial->print("T0: ");mySerial->print(temperature); mySerial->println(unit);
-                    break;
-            }
-
-            DS18B20_Stop(Config.OneWirePowerPin); // Turn off power Pin for DS18B20
-        }
-    }
-    return num_devices;
-}
-
-
+/*****************************************************************************/
+/***              BME280 air pressure and humidity Sensor                  ***/
+/*****************************************************************************/
 #include <BME280I2C.h>
 
 BME280I2C *BME280;
@@ -540,80 +310,47 @@ static bool BME280_Init(UseBits &enable)
     if(enable.BME280)
     {
         BME280 = new BME280I2C();
-        mySerial->print("BME280: ");
         enable.BME280 = BME280->begin();
-        if (enable.BME280)
+        print_init_result(enable.BME280, "BME280");
+        if (!enable.BME280)
         {
-            mySerial->print("init(): success\n");
-        }
-        else
-        {
-            mySerial->print("init(): failed\n");
             delete BME280;
             BME280=NULL;
-
         }
     }
     return enable.BME280;
 }
 
-uint8_t BME280_Measure(bool enabled, float &temp, float &hum, float &pres)
+uint8_t BME280_Measure(uint8_t enabled, BME280I2C *Bme280, HumiditySensor &Data);
+uint8_t BME280_Measure(uint8_t enabled, BME280I2C *Bme280, HumiditySensor &Data)
 {
     uint8_t success = 0;
-    if (enabled && BME280)
+    if (enabled && Bme280)
     {
-        digitalWrite(Config.I2CPowerPin, HIGH);
-        delay(2); // start up time according to data sheet
-        if (BME280->begin())
-        {
-           BME280::TempUnit tempUnit(BME280::TempUnit_Celsius);
-           BME280::PresUnit presUnit(BME280::PresUnit_hPa);
+        I2C_pullup(Data.PowerPin);
 
-           BME280->read(pres, temp, hum, tempUnit, presUnit);
-           print_humidity_sensor_values("BME280",temp, hum);
-           mySerial->print("Pressure: "); mySerial->print(pres); mySerial->println("hPa");
-           success = 0x4;
+        delay(2); // start up time according to data sheet
+        if (Bme280->begin())
+        {
+           BME280I2C::TempUnit tempUnit(BME280I2C::TempUnit_Celsius);
+           BME280I2C::PresUnit presUnit(BME280I2C::PresUnit_hPa);
+
+           Bme280->read(Data.pressure, Data.temperature, Data.humidity, tempUnit, presUnit);
+           success = enabled;
+        }
+        else
+        {
+            mySerial->println("cant read BME280");
         }
 
-        I2C_shutdown();
+        I2C_shutdown(Data.PowerPin);
     }
     return success;
 }
 
 
 /*****************************************************************************/
-/***      Brightness  with LDR                                             ***/
-/*****************************************************************************/
 
-static bool LDR_Init(UseBits &enable)
-{
-    if (Config.LdrPin < 0) enable.BRIGHTNESS=0;
-    if ( digitalPinToAnalogInput(Config.LdrPin)==NOT_A_PIN) enable.BRIGHTNESS=0;
-    if (enable.BRIGHTNESS)
-    {
-        pinConfigure(Config.LdrPin, PIN_DIR_INPUT, PIN_PULLUP_OFF, PIN_INPUT_ENABLE);
-        mySerial->println("LDR inititialised.");
-    }
-    return enable.BRIGHTNESS;
-}
-
-
-static uint16_t LDR_Measure(bool enabled, int8_t LDRPin)
-{
-    uint16_t sensorValue=0;
-
-    if (enabled && LDRPin >= 0)
-    {
-        pinMode(LDRPin, INPUT_PULLUP);
-        ADC0.CTRLA |= ADC_ENABLE_bm; // enable ADC
-        delay(20);
-        sensorValue = (uint16_t)(1023 - (analogRead(LDRPin)/(1<<ADC0.CTRLB)));
-        pinMode(LDRPin, INPUT);
-        ADC0.CTRLA &= ~ADC_ENABLE_bm; // disable ADC
-        mySerial->print("Brightness: "); mySerial->println(sensorValue);
-    }
-    return sensorValue;
-}
 
 static void Reset_SPI(uint8_t swap, uint8_t mode = SPI_MODE0)
 {
@@ -673,7 +410,7 @@ static void MAX31865_Init(UseBits &enable)
 {
     if (enable.MAX31865)
     {
-        //pinMode(RTD_CS_PIN, INPUT_PULLUP);  // SPI SS (avoid becoming SPI Slave) // already done in setup()
+        pinMode(Config.RTDCSPin, INPUT_PULLUP);  // SPI SS
 
         SPI_MISO_Enable(MAX31865_SPI_PINSWAP);
         P(println("start MAX31865"));
@@ -738,282 +475,22 @@ static uint8_t MAX31865_Measure(bool enable, float* pt100_temp)
 /*****************************************************************************/
 /***                   READ VCC                                            ***/
 /*****************************************************************************/
-
-/***   READ VCC ***/
-
-long Vcal_x_ADCcal = 1500L * 1023L;
-#define SAMPLE_ACCUMULATION 0x5 // 32 samples
-
-// possible modes are: INTERNAL0V55, INTERNAL1V1, INTERNAL2V5, INTERNAL4V34, INTERNAL1V5
-
-#if defined (__AVR_ATmega4808__)
-int analogReadInternalRef(uint8_t mode)
-{
-  #if defined(ADC0)
-
-  // save registers
-  uint8_t vref_ctrla = VREF.CTRLA;
-  uint8_t adc0_muxpos = ADC0.MUXPOS;
-  uint8_t adc0_ctrlb = ADC0.CTRLB;
-
-  // setup DACREF in AC0
-  VREF.CTRLA = (VREF.CTRLA & ~(VREF_AC0REFSEL_gm)) | (mode << VREF_AC0REFSEL_gp);
-
-
-  // Reference should be already set up and should be VDD
-  // ADC0.CTRLC =0b x101 xxxx // 4808 SAMPCAP=1, reference = 0b01 = VDD
-  // VREF.ADC0REF = VREF_REFSEL_VDD_gc
-
-  // set input to DACREF0
-  ADC0.MUXPOS = ADC_MUXPOS_DACREF_gc;
-
-  // set sample accumulation
-  ADC0.CTRLB = SAMPLE_ACCUMULATION;
-
-  // Start conversion
-  ADC0.COMMAND = ADC_STCONV_bm;
-
-  // Wait for result ready
-  while (!(ADC0.INTFLAGS & ADC_RESRDY_bm))
-    ;
-
-  // restore registers;
-  VREF.CTRLA = vref_ctrla;
-  ADC0.MUXPOS = adc0_muxpos;
-  ADC0.CTRLB = adc0_ctrlb;
-  // Combine two bytes
-  return ADC0.RES;
-
-    #else /* No ADC, return 0 */
-      return 0;
-    #endif
-}
-
-
-#elif defined (ARDUINO_avrdd)
-int analogReadInternalRef(uint8_t mode)
-{
-    (void) mode;
-
-    // disable ADC
-    ADC0.CTRLA &= ~ADC_ENABLE_bm;
-
-    // set reference to VDD
-    VREF.ADC0REF = VREF_REFSEL_VDD_gc;
-
-    // set DAC0REF to 1.024V
-    VREF.DAC0REF = VREF_REFSEL_1V024_gc;
-
-    // set input to DACREF0
-    ADC0.MUXPOS = ADC_MUXPOS_DACREF0_gc;
-
-    // set bitb resolution and conversion mode (single ended)
-     ADC0.CTRLA = ADC_CONVMODE_SINGLEENDED_gc | ADC_RESSEL_10BIT_gc | ADC_ENABLE_bm;
-
-    // set sample accumulation
-    ADC0.CTRLB = SAMPLE_ACCUMULATION;
-
-    // Start conversion
-    ADC0.COMMAND = ADC_STCONV_bm;
-
-    // Wait for result ready
-    while (!(ADC0.INTFLAGS & ADC_RESRDY_bm));
-
-    ADC0.CTRLA &= ~ADC_ENABLE_bm; // disable ADC
-    // Combine two bytes
-    return ADC0.RES;
-}
-#endif
-
-
-long readVcc()
-{
-    #if defined (__AVR_ATmega4808__)
-        return analogReadInternalRef(INTERNAL1V5) / (1<<SAMPLE_ACCUMULATION);
-    #elif defined (ARDUINO_avrdd)
-       return analogReadInternalRef(VREF_REFSEL_1V024_gc);
-    #endif
-}
-
-float getVcc(long vref)
-{
-    return (float)vref / readVcc();
-}
+#include "analog.h"
+long Vcal_x_ADCcal;
 
 
 /*****************************************************************************/
-/***                   READ MCU TEMPERATURE                                ***/
+/***                   ENCODERS                                            ***/
 /*****************************************************************************/
-
-// this is an attempt to use the analog temperature sensor in the MCU
-// test have shown that the factory calibration is insufficient.
-
-static float readMcuTemperaure(void)
+static uint16_t encode_temp(float t_raw)
 {
-#if defined (MEGACOREX)
-    uint16_t temp_raw=0;
-    uint32_t temp_l=0;
-    float temp;
-    int8_t sigrow_offset = SIGROW.TEMPSENSE1; // Read signed value from signature row
-    uint8_t sigrow_slope = SIGROW.TEMPSENSE0; // Read unsigned value from signature row
-
-    analogReference(INTERNAL1V1);
-    ADC0.MUXPOS = ADC_MUXPOS_TEMPSENSE_gc;
-
-    //uint8_t vref_ctrla = VREF.CTRLA;
-    uint8_t adc0_sampctrl = ADC0.SAMPCTRL;
-    uint8_t adc0_ctrld = ADC0.CTRLD;
-
-    ADC0.CTRLD &= ~0xE0;
-    ADC0.CTRLD |= 0x60;
-    ADC0.SAMPCTRL = 0x04;
-
-
-    // Start conversion
-    ADC0.COMMAND = ADC_STCONV_bm;
-
-    // Wait for result ready
-    while (!(ADC0.INTFLAGS & ADC_RESRDY_bm));
-
-    temp_raw = ADC0.RES;
-
-    temp_l = temp_raw - sigrow_offset;
-    temp_l *= sigrow_slope;
-    temp_l += 0x40;
-    temp_l >>= 7;
-    //temp = (float)temp_l /256.0 -273;
-    temp = (float)temp_l /2.0 -273;
-
-    //restore Analog reference to VDD
-    analogReference(VDD);
-
-    // restore registers
-    ADC0.SAMPCTRL = adc0_sampctrl;
-    ADC0.CTRLD = adc0_ctrld;
-    #if DEBUG >0
-    mySerial->print("ADC TEMPSENS: 0x"); mySerial->println(temp_raw);
-    mySerial->print("ADC CTRLC   : 0x"); mySerial->println(ADC0.CTRLC,HEX);
-    #endif
-    return temp;
-
-#else if (ARDUINO_avrdd)
-    uint16_t temp_raw=0;
-    uint32_t temp_l=0;
-    float temp;
-
-    uint8_t adc0_sampctrl = ADC0.SAMPCTRL;
-    uint8_t adc0_ctrld = ADC0.CTRLD;
-    uint8_t adc0_ctrlb = ADC0.CTRLB;
-    #define NUM_SAMPLES ADC_SAMPNUM_ACC8_gc
-
-    // disable ADC
-    ADC0.CTRLA &= ~ADC_ENABLE_bm;
-
-    analogReference(VREF_REFSEL_2V048_gc);
-
-    // Sample accumulation
-    ADC0.CTRLB = NUM_SAMPLES;
-
-    ADC0.MUXPOS = ADC_MUXPOS_TEMPSENSE_gc;
-    ADC0.CTRLD &= ~0xE0; // clear init delay bits
-    ADC0.CTRLD |= ADC_INITDLY_DLY16_gc; // set init delay
-    ADC0.SAMPCTRL = 0x10; // increase of sampling time
-
-
-    // set bitb resolution and conversion mode (single ended)
-    ADC0.CTRLA = ADC_CONVMODE_SINGLEENDED_gc | ADC_RESSEL_12BIT_gc | ADC_ENABLE_bm; // enable
-
-    uint16_t sigrow_offset = SIGROW.TEMPSENSE1; // Read offset value from signature row
-    uint16_t sigrow_slope = SIGROW.TEMPSENSE0;  // Read slope value from signature row
-
-    // Start conversion
-    ADC0.COMMAND = ADC_STCONV_bm;
-
-    // Wait for result ready
-    while (!(ADC0.INTFLAGS & ADC_RESRDY_bm));
-    temp_raw = ADC0.RES;
-
-    #if DEBUG > 0
-    //mySerial->print("\r\nADC RES      : "); mySerial->println(temp_raw);
-    #endif
-
-    // apply formula according to Data Sheet
-    temp_l = sigrow_offset - (temp_raw>>NUM_SAMPLES);
-    temp_l *= sigrow_slope;
-
-
-    // choose resolution
-    //#define SF 4096 // 1 deg resolution
-    //#define SF 2048 // 1/2 deg resolution
-    //#define SF 1024 // 1/4 deg resolution
-    #define SF 512 // 1/8 deg resolution
-    #define SCAL (4096/SF)
-
-
-    temp_l += SF/2;
-    temp_l /= SF;
-    temp = (float)temp_l / SCAL - 273;
-
-    ADC0.CTRLA &= ~ADC_ENABLE_bm; // disable ADC
-    ADC0.SAMPCTRL = adc0_sampctrl;
-    ADC0.CTRLD = adc0_ctrld;
-    ADC0.CTRLB = adc0_ctrlb;
-    return temp;
-#endif
+    return floor(t_raw * 25 + 1000.5);
 }
 
-// setup external 32.768 kHz crystal for RTC (refer to TB3213)
-static void RTC_Xosc32k_Init() {
-  uint8_t temp;
-
-  // disable oscillator first
-  temp = CLKCTRL.XOSC32KCTRLA;
-  temp &= ~CLKCTRL_ENABLE_bm;
-  CPU_CCP = CCP_IOREG_gc;
-  CLKCTRL.XOSC32KCTRLA = temp;
-
-  // wait for status bit to become '0'
-  while(CLKCTRL.MCLKSTATUS & CLKCTRL_XOSC32KS_bm);
-
-  // select external crystal for RTC
-  temp = CLKCTRL.XOSC32KCTRLA;
-  temp &= ~CLKCTRL_SEL_bm;
-  CPU_CCP = CCP_IOREG_gc;
-  CLKCTRL.XOSC32KCTRLA = temp;
-
-  // enable the oscillator
-  temp = CLKCTRL.XOSC32KCTRLA;
-  temp |= CLKCTRL_ENABLE_bm | CLKCTRL_RUNSTDBY_bm;
-  #if defined ARDUINO_avrdd
-  temp |= CLKCTRL_LPMODE_bm;
-  #endif
-  CPU_CCP = CCP_IOREG_gc;
-  CLKCTRL.XOSC32KCTRLA = temp;
-
-  // wait for all registers to be synchronized
-  while (RTC.STATUS > 0);
-
-  // select 32.768 kHz external crystal oscillator
-  #if defined (MEGACOREX)
-  RTC.CLKSEL = RTC_CLKSEL_TOSC32K_gc;
-  #elif defined (ARDUINO_avrdd)
-  //RTC.CLKSEL = RTC_CLKSEL_XTAL32K_gc; //compiler error
-  RTC.CLKSEL = 0x02;
-  #endif
-}
-
-static void RTC_ULP32k_init(void)
+static uint8_t encode_humidity(float h_raw)
 {
-    RTC.CLKSEL = RTC_CLKSEL_INT1K_gc;         // Internal 1024 Hz OSC
+    return (uint8_t) floor(h_raw *2 +0.5);
 }
-
-static void PIT_init(uint8_t Period)
-{
-    //C:\Program Files (x86)\Arduino\hardware\tools\avr\avr\include\avr\iom4808.h
-    RTC.PITINTCTRL = RTC_PI_bm;
-    RTC.PITCTRLA   = Period  | RTC_PITEN_bm;
-}
-
 
 
 /*****************************************************************************/
@@ -1056,6 +533,7 @@ void activityLed (unsigned char state, unsigned int time = 0)
   }
 }
 
+
 // blink led
 static void blink (byte pin, byte n = 3)
 {
@@ -1074,123 +552,6 @@ static void blink (byte pin, byte n = 3)
 
 
 /*********************/
-
-
-// should go into configuration class
-#if DEBUG == 2
-static void print_eeprom(Stream *serial)
-{
-    /*
-    //serial->print("Nodeid = ");        serial->print(Config.Nodeid);          serial->println();
-    //serial->print("Networkid = ");     serial->print(Config.Networkid);       serial->println();
-    //serial->print("Gatewayid =  ");    serial->print(Config.Gatewayid);       serial->println();
-    //serial->print("VccAtCalmV  = ");   serial->print(Config.VccAtCalmV);      serial->println();
-    //serial->print("AdcCalValue = ");   serial->print(Config.AdcCalValue);     serial->println();
-    //serial->print("Senddelay = ");     serial->print(Config.Senddelay);       serial->println();
-    //serial->print("Frequencyband = "); serial->print(Config.Frequencyband);   serial->println();
-    //serial->print("frequency = ");     serial->print(Config.frequency);       serial->println();
-    //serial->print("TxPower = ");       serial->print(Config.TxPower);         serial->println();
-    //serial->print("RequestAck = ");    serial->print(Config.RequestAck);      serial->println();
-    //serial->print("LedCount = ");      serial->print(Config.LedCount);        serial->println();
-    //serial->print("LedPin = ");        serial->print(Config.LedPin);          serial->println();
-    //serial->print("RxPin = ");         serial->print(Config.RxPin);           serial->println();
-    //serial->print("TxPin = ");         serial->print(Config.TxPin);           serial->println();
-    //serial->print("SDAPin = ");        serial->print(Config.SDAPin);          serial->println();
-    //serial->print("SCLpin = ");        serial->print(Config.SCLPin);          serial->println();
-    //serial->print("I2CPowerPin = ");   serial->print(Config.I2CPowerPin);     serial->println();
-    //serial->print("checksum = ");      serial->print(Config.checksum);        serial->println();
-
-    serial->print(offsetof(Configuration,PCI0Pin));serial->print(" Interrupt 0 Pin = ");serial->print(Config.PCI0Pin);        serial->println();
-    serial->print(offsetof(Configuration,PCI1Pin));serial->print(" Interrupt 1 Pin = ");serial->print(Config.PCI1Pin);        serial->println();
-    serial->print(offsetof(Configuration,PCI2Pin));serial->print(" Interrupt 2 Pin = ");serial->print((int)Config.PCI2Pin);        serial->println();
-    serial->print(offsetof(Configuration,PCI3Pin));serial->print(" Interrupt 3 Pin = ");serial->print((int)Config.PCI3Pin);        serial->println();
-    //serial->print("Interrupt 0 Type = ");serial->print(show_trigger(Config.PCI0Trigger)); serial->print(", ");  serial->print(show_pinmode(Config.PCI0Trigger)); serial->println();
-    //serial->print("Interrupt 1 Type = ");serial->print(show_trigger(Config.PCI1Trigger)); serial->print(", ");  serial->print(show_pinmode(Config.PCI1Trigger)); serial->println();
-    //serial->print("Interrupt 2 Type = ");serial->print(show_trigger(Config.PCI2Trigger)); serial->print(", ");  serial->print(show_pinmode(Config.PCI2Trigger)); serial->println();
-    //serial->print("Interrupt 3 Type = ");serial->print(show_trigger(Config.PCI3Trigger)); serial->print(", ");  serial->print(show_pinmode(Config.PCI3Trigger)); serial->println();
-    //serial->flush();
-    serial->print(offsetof(Configuration,UseCrystalRtc));serial->print(" Use Crystal = ");     serial->print(Config.UseCrystalRtc);  serial->println();
-    //serial->print("Encryption = ");     serial->print(Config.EncryptionEnable);  serial->println();
-    //serial->print("FEC = ");            serial->print(Config.FecEnable);  serial->println();
-    //serial->print("Interleave = ");     serial->print(Config.InterleaverEnable);  serial->println();
-    serial->print(offsetof(Configuration,EepromVersionNumber)); serial->print(" EEPROM Version= ");  serial->print(Config.EepromVersionNumber);  serial->println();
-    serial->print(offsetof(Configuration,SoftwareversionNumber));serial->print(" Software Version = ");  serial->print(Config.SoftwareversionNumber);  serial->println();
-    serial->print(offsetof(Configuration,TXGaussShaping));serial->print(" Gauss shaping= ");   serial->print(Config.TXGaussShaping);  serial->println();
-    serial->print(offsetof(Configuration,SerialEnable));serial->print(" Serial Port Enable = "); serial->print(Config.SerialEnable);  serial->println();
-    serial->print(offsetof(Configuration,IsRFM69HW));serial->print(" RF Chip = "); Config.IsRFM69HW ?    serial->print("RFM69HCW") : serial->print("RFM69CW");  serial->println();
-    serial->print(offsetof(Configuration,PaBoost));serial->print(" PA Boost = ");      serial->print(Config.PaBoost);  serial->println();
-    serial->print(offsetof(Configuration,FedvSteps));serial->print(" Fdev (Steps) = ");      serial->print(Config.FedvSteps);  serial->println();
-    serial->flush();
-    */
-}
-#endif
-
-/*****************************************************************************/
-/****                        SIGROW                                       ****/
-/*****************************************************************************/
-// Serial Number consists of 10 Bytes.
-// The first 6 Bytes are printable characters.
-// the last 4 Bystes are the actual serial number.
-
-typedef struct
-{
-    char prefix[7];
-    union
-    {
-        uint8_t sn_char[4];
-        uint32_t sn;
-    };
-} SerialNumber;
-
-
-
-void print_serial_number()
-{
-    uint8_t* sernum_addr = (uint8_t*)&SIGROW.SERNUM0;
-    int i;
-    Serial.print("Serial Number ");
-    #if defined (ARDUINO_avrdd)
-
-    #if defined __AVR_AVR64DD32__
-    Serial.print("AVR64DD32: ");
-    #elif defined __AVR_AVR64DD28__
-    Serial.print("AVR64DD28: ");
-    #else
-    Serial.print("AVRxxDDxx: ");
-    #endif
-    // AVRxxDDxx have 16 Bytes
-    for (i=0;  i<16; i++)
-    {
-        uint8_t sni = *sernum_addr;
-        Serial.print(sni,HEX);
-        Serial.print(" ");
-        sernum_addr++;
-    }
-
-
-    #else
-    #if defined (__AVR_ATmega4808__)
-    Serial.print("ATMEGA4808: ");
-    #endif
-    SerialNumber SN;
-    for (i=0; i<6; i++)
-    {
-        SN.prefix[i] = (char) *sernum_addr;
-        sernum_addr++;
-    }
-    SN.prefix[6]=0;
-
-    for (i=0; i<4; i++)
-    {
-        SN.sn_char[i] = *sernum_addr;
-        sernum_addr++;
-    }
-
-    Serial.print(SN.prefix); Serial.print(" "); Serial.println(SN.sn);
-    #endif
-}
-/*****************************************************************************/
-
 
 void setup() {
 
@@ -1221,37 +582,24 @@ void setup() {
     CalMode.configure();
 
     mySerial->println("  _______   _   _   _           ___");
-
     mySerial->println(" |__   __| (_) | \\ | |         |__ \\");
-
     mySerial->println("    | |     _  |  \\| |   ___      ) |");
     mySerial->println("    | |    | | | . ` |  / _ \\    / / ");
     mySerial->println("    | |    | | | |\\  | | (_) |  / /_");
     mySerial->println("    |_|    |_| |_| \\_|  \\___/  |____|");
     mySerial->println("    by nurazur\r\n");
 
-    print_serial_number();
+    print_serial_number(mySerial);
 
     mySerial->print("\r\nNode ID: ");mySerial->println(Config.Nodeid);
 
     #if DEBUG >= 2
-    print_eeprom(mySerial);
+    //print_eeprom(Config, mySerial);
     #endif
+
     // disable serial RX
     pinMode(1, INPUT_PULLUP);
     disablePinISC(1);
-
-
-
-    //UseBits* u;
-    //u = (UseBits*)&Config.SensorConfig;
-    //TiNo = new PacketHandler(*u);
-    TiNo = new PacketHandler(*((UseBits*)&Config.SensorConfig));
-
-    #if DEBUG >=1
-    mySerial->print("packet type: "); mySerial->print(TiNo->PacketType);
-    mySerial->print(", leng: "); mySerial->println(TiNo->PacketLen);
-    #endif
 
     /***                              ***/
     /***     Pin Change Interrupts    ***/
@@ -1311,8 +659,6 @@ void setup() {
 
     sei();
 
-
-
     Vcal_x_ADCcal = (long)Config.VccAtCalmV * Config.AdcCalValue;
 
     pinMode(Config.LedPin, OUTPUT);
@@ -1324,41 +670,63 @@ void setup() {
         delay(1);
     }
 
+    SensorData.PowerPin = Config.I2CPowerPin;
+
+    // (UseBits) Config.SensorConfig does not work (compiler error), so we need a workaround
+    UseBits *sensors = (UseBits*)&Config.SensorConfig;
+    //mySerial->print("Sensor Config: "); mySerial->println(Config.SensorConfig, HEX);
+
     Wire.swap(0); // 0 is default, 1 is identical with 0, 3 has the same pins as UART0
     Wire.begin();
-    SHTC3_Init   (TiNo->use);
-    SHT3X_Init   (TiNo->use);
-    SHT4X_Init   (TiNo->use);
-    HTU21D_Init  (TiNo->use);
-    BME280_Init  (TiNo->use);
-    DS18B20_Init (TiNo->use);
+    SHTC3_Init   (*sensors);
+    SHT3X_Init   (*sensors);
+    SHT4X_Init   (*sensors);
+    HTU21D_Init  (*sensors);
+    BME280_Init  (*sensors);
+
+    TiNo = new PacketHandler(*sensors);
+
+    #if DEBUG >=1
+    mySerial->print("packet type: "); mySerial->print(TiNo->PacketType);
+    mySerial->print(", leng: "); mySerial->println(TiNo->PacketLen);
+    #endif
+
+    #ifdef DS18B20_H
+    if (TiNo->use.DS18B20)
+    {
+        uint8_t num_ds18b20 = DS18B20_Init (TiNo->use.DS18B20, Config.OneWirePowerPin, Config.OneWireDataPin);
+        if (num_ds18b20==0) TiNo->use.DS18B20=0;
+        mySerial->print("DS18B20 found: "); mySerial->println(num_ds18b20);
+    }
+    #else
+        #warning no Dallas18b20 Module included in this build
+    #endif
+
     MAX31865_Init(TiNo->use);
 
-    I2C_shutdown();
+    I2C_shutdown(Config.I2CPowerPin);
 
-    //mySerial->print("PORTMUX.TWISPIROUTEA = "); mySerial->println(PORTMUX.TWISPIROUTEA);
-
-    LDR_Init(TiNo->use);
+    // Initialize LDR, if enabled
+    if (TiNo->use.BRIGHTNESS)
+    {
+        TiNo->use.BRIGHTNESS = LDR_Init(Config.LdrPin);
+        if (TiNo->use.BRIGHTNESS)
+            mySerial->println("LDR initialized.");
+        else
+            mySerial->println("LDR NOT initialized.");
+    }
 
     TiNo->nodeid(Config.Nodeid);
     TiNo->targetid(Config.Gatewayid);
     TiNo->humidity(0);
 
+    PIT.init(Config.UseCrystalRtc, 0);
+    PIT.enable();
+    if (Config.UseCrystalRtc) Config.Senddelay *= 8; // so the total delay time  is 8s;
 
-    if (Config.UseCrystalRtc)
-    {
-        PIT_init(RTC_PERIOD_CYC32768_gc);  // results in 1s period (maximum)
-        Config.Senddelay *= 2; // so the total delay time  is 1s * 2 * SENDDELAY. i.e. SENDDELAY= 30 results in 1 minute delay
-        RTC_Xosc32k_Init();
-    }
-    else
-    {
-        PIT_init(RTC_PERIOD_CYC8192_gc);  //  8s period
-        RTC_ULP32k_init();
-    }
 
-  set_sleep_mode(SLEEP_MODE_PWR_DOWN);      // set sleep mode
-  sleep_enable();    // enable sleep control
+    set_sleep_mode(SLEEP_MODE_PWR_DOWN);      // set sleep mode
+    sleep_enable();    // enable sleep control
 
     #if DEBUG > 0
     #if defined (MEGACOREX)
@@ -1393,7 +761,7 @@ void setup() {
 
 
 
-// calculate TX Flag depending on events
+// simple, but messy version
 uint8_t calculate_tx_flag()
 {
     uint8_t Flags = 0;
@@ -1435,39 +803,12 @@ uint8_t calculate_tx_targetid()
 }
 
 
-void print_flag(uint8_t flag)
-{
-    if (flag &0x1)
-    {
-        mySerial->println("\r\nHeartBeat");
-    }
-
-    flag >>=1;
-    if (flag)
-    {
-        mySerial->print("event: PCI");
-        for (int i=0; i<4; i++)
-        {
-            if (flag&0x1)
-            {
-                mySerial->print((char)('0'+i));
-            }
-            flag >>= 1;
-        }
-    }
-    mySerial->println();
-}
-
-
-
-
-// measure Battery voltage, try all sensors if configured or not and fill the payload accordingly.
+// this function measures Battery voltage, tries all sensors if configured or not and fills the payload accordingly.
 // return temperature. (because temp is used by the radio for frequency compensation.)
 float Measure(void)
 {
     float temperature=0;
     float t_internal =0; // the temperature we return must be a internal sensor.
-    float humidity =0;
 
     // measure Battery Voltage
     mySerial->print("VCC: "); mySerial->print(getVcc(Vcal_x_ADCcal)); mySerial->println("mV");
@@ -1483,28 +824,53 @@ float Measure(void)
     uint8_t success =0;
     // TiNo RF protocol allows only for one temperature/humidity sensor.
     // if there are more than one, the last one ist reported.
-    // BME280 has priority over SHT4x. SHT4x has priority over SHTC3, and so on.
-    success |= HTU21D_Measure(TiNo->use.HTU21D, temperature, humidity);
-    success |= SHT_Measure(TiNo->use.SHT3X, SHT3X, temperature, humidity);
-    success |= SHT_Measure(TiNo->use.SHTC3, SHTC3, temperature, humidity);
-    success |= SHT_Measure(TiNo->use.SHT4X, SHT4X, temperature, humidity);
+    // BME280 has priority over SHT4x. SHT4x has priority over SHT3X, and so on.
 
-    // BME280 measurement
-    if(TiNo->use.BME280)
+    uint8_t used_sensors = *((uint8_t*)&TiNo->use);
+
+    if (TiNo->use.HTU21D)
     {
-        float pressure;
-        success |= BME280_Measure(true, temperature, humidity, pressure);
-        TiNo->pressure((uint32_t)floor(pressure*100));
+        success |= HTU21D_Measure(Config.SensorConfig & HTU21D_bm, myHTU21D, SensorData);
+        if (success & HTU21D_bm) print_humidity_sensor_values("HTU21D", SensorData.temperature, SensorData.humidity, mySerial);
+    }
+
+    if (TiNo->use.SHT3X)
+    {
+        success |= SHT_Measure(used_sensors & SHT3X_bm, SHT3X, SensorData);
+        if (success & SHT3X_bm) print_humidity_sensor_values("SHT3x", SensorData.temperature, SensorData.humidity, mySerial);
+    }
+
+    if (TiNo->use.SHTC3)
+    {
+        success |= SHT_Measure(used_sensors & SHTC3_bm, SHTC3, SensorData);
+        if (success & SHTC3_bm) print_humidity_sensor_values("SHTC3", SensorData.temperature, SensorData.humidity, mySerial);
+    }
+
+    if (TiNo->use.SHT4X)
+    {
+        success |= SHT_Measure(used_sensors & SHT4X_bm, SHT4X, SensorData);
+        if (success & SHT4X_bm) print_humidity_sensor_values("SHT4X", SensorData.temperature, SensorData.humidity, mySerial);
+    }
+
+    if (TiNo->use.BME280)
+    {
+        success |= BME280_Measure(Config.SensorConfig & BME280_bm, BME280, SensorData);
+        if (success & BME280_bm)
+        {
+            print_humidity_sensor_values("BME280", SensorData.temperature, SensorData.humidity, mySerial);
+            mySerial->print("Pressure: "); mySerial->print(SensorData.pressure); mySerial->println("hPa");
+            TiNo->pressure((uint32_t)floor(SensorData.pressure*100));
+        }
     }
 
     // if a temperature/humidity sensor is present, copy measurement results into Payload
     if(success)
     {
-        TiNo->add_temp(encode_temp(temperature));
-        TiNo->humidity(encode_humidity(humidity));
+        TiNo->add_temp(encode_temp(SensorData.temperature));
+        TiNo->humidity(encode_humidity(SensorData.humidity));
 
         // all above sensors are usually internal, PT100 and DS18B20 are most lilely external.
-        t_internal = temperature;
+        t_internal = SensorData.temperature;
     }
 
     // PT100 Measurement
@@ -1513,42 +879,57 @@ float Measure(void)
         uint8_t status = MAX31865_Measure(TiNo->use.MAX31865, &temperature);
         if (status==0)
         {
-            success |= 0x1;
+            success |= MAX31865_bm;
             TiNo->add_temp(encode_temp(temperature));
         }
     }
 
+    #ifdef DS18B20_H
     // Dallas DS18B20 Measurement
     if(TiNo->use.DS18B20)
     {
-        uint16_t t[3];
+        float t[3];
         t[0]=t[1]=t[2]=0;
-        uint8_t num_ds18b20 = DS18B20_Measure(TiNo->use.DS18B20, t);
+        uint8_t num_ds18b20 = DS18B20_Measure(TiNo->use.DS18B20, t, Config.OneWirePowerPin);
         for (uint8_t i=0; i<num_ds18b20; i++)
-            TiNo->add_temp(t[i]);
+        {
+            TiNo->add_temp(encode_temp(t[i]));
+            mySerial->print("T"); mySerial->print(i); mySerial->print(": "); mySerial->println(t[i]);
+        }
 
-        success |= num_ds18b20;
-        // todo: if the DS18B20 is the only sensor, we must set temperature = t[0], and t_internal = temperature;
+        if (num_ds18b20 > 0) success |= DS18B20_bm;
+
+        // if DS18B20 is the only sensor attached:
+        if ((success ^ DS18B20_bm)== 0) // or (success == DS18B20_bm)
+        {
+            temperature = t[0]; t_internal = temperature;
+        }
     }
+    #endif
 
     // in case no temperature sensor is detected, we use the temperature from the RF Module
     if (!success)
     {
         mySerial->println("no temp sensor");
-        temperature = temperature = 12.34;
+        temperature = 12.34;
         #ifdef USE_RADIO
             temperature = radio.readTemperature(0) + Config.radio_temp_offset/10.0;
         #endif
         TiNo->add_temp(encode_temp(temperature));
         t_internal = temperature;
         #if DEBUG >0
-            print_humidity_sensor_values("RFM69: ", temperature, humidity);
+            print_humidity_sensor_values("RFM69: ", temperature, humidity, mySerial);
         #endif
     }
 
-    TiNo->brightness( LDR_Measure(TiNo->use.BRIGHTNESS, Config.LdrPin));
+    uint16_t br;
+    if (LDR_Measure(TiNo->use.BRIGHTNESS, Config.LdrPin, br))
+    {
+        TiNo->brightness(br);
+        mySerial->print("Brightness: "); mySerial->println(br);
+    }
 
-    // for the temperature sensor in the MCU I have currently no use.
+
     //mySerial->print("MCU Temperature: "); mySerial->println(readMcuTemperaure(),2);
     return t_internal;
 }
@@ -1590,7 +971,7 @@ void loop()
         return; // start over, go sleep.
     }
 
-    print_flag(Flags);
+    print_flag(Flags, mySerial);
 
     // increment frame counter
     total_count++;

@@ -28,7 +28,19 @@
 // and copyright notices in any redistribution of this code
 // *********************************************************************************
 
+#ifndef PACKETHANDLER_H
+#define PACKETHANDLER_H
+
 #include "datalinklayer.h"
+
+#define HTU21D_bm   (1<<0)
+#define DS18B20_bm  (1<<1)
+#define BME280_bm   (1<<2)
+#define SHT3X_bm    (1<<3)
+#define MAX31865_bm (1<<4)
+#define BRIGHTNESS_bm (1<<5)
+#define SHTC3_bm    (1<<6)
+#define SHT4X_bm    (1<<7)
 
 typedef struct
 {
@@ -104,3 +116,4 @@ class PacketHandler
         uint8_t *pData;
 };
 
+#endif

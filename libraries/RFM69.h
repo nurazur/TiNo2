@@ -6,23 +6,23 @@
 // **********************************************************************************
 // License
 // **********************************************************************************
-// This program is free software; you can redistribute it 
-// and/or modify it under the terms of the GNU General    
-// Public License as published by the Free Software       
-// Foundation; either version 3 of the License, or        
-// (at your option) any later version.                    
-//                                                        
-// This program is distributed in the hope that it will   
-// be useful, but WITHOUT ANY WARRANTY; without even the  
-// implied warranty of MERCHANTABILITY or FITNESS FOR A   
-// PARTICULAR PURPOSE. See the GNU General Public        
-// License for more details.                              
-//                                                        
-// You should have received a copy of the GNU General    
+// This program is free software; you can redistribute it
+// and/or modify it under the terms of the GNU General
+// Public License as published by the Free Software
+// Foundation; either version 3 of the License, or
+// (at your option) any later version.
+//
+// This program is distributed in the hope that it will
+// be useful, but WITHOUT ANY WARRANTY; without even the
+// implied warranty of MERCHANTABILITY or FITNESS FOR A
+// PARTICULAR PURPOSE. See the GNU General Public
+// License for more details.
+//
+// You should have received a copy of the GNU General
 // Public License along with this program.
 // If not, see <http://www.gnu.org/licenses/>.
-//                                                        
-// Licence can be viewed at                               
+//
+// Licence can be viewed at
 // http://www.gnu.org/licenses/gpl-3.0.txt
 //
 // Please maintain this license information along with authorship
@@ -103,7 +103,7 @@ class RFM69 : public GenericRadio
     //int fdev;
     //long vcc_dac;
     bool do_frequency_correction;
-    
+
     RFM69(byte slaveSelectPin=RF69_SPI_CS, byte interruptPin=RF69_IRQ_PIN, bool isRFM69HW=false, byte interruptNum=RF69_IRQ_NUM) : GenericRadio(RF69_FSTEP)
     {
       _slaveSelectPin = slaveSelectPin;
@@ -135,7 +135,7 @@ class RFM69 : public GenericRadio
     void Send(const void* buffer, byte bufferSize); // for compatibility with older RFM12B lib
     //bool sendWithRetry(byte toAddress, const void* buffer, byte bufferSize, byte retries=2, byte retryWaitTime=40); //40ms roundtrip req for  61byte packets
     bool receiveDone();
-    
+
     //bool ACKReceived(byte fromNodeID);
     //bool ACKRequested();
     //void sendACK(const void* buffer = "", uint8_t bufferSize=0);
@@ -168,24 +168,24 @@ class RFM69 : public GenericRadio
     static void isr0();
     void virtual interruptHandler();
     static RFM69* selfPointer;
-    
+
     void sendFrame(const void* buffer, byte size);
 
-    
+
     byte _slaveSelectPin;
     byte _interruptPin;
     byte _interruptNum;
     byte _powerLevel;
     bool _isRFM69HW;
     bool _PaBoost;
-    
+
     #if defined(__AVR_ATtiny84__) || defined(__AVR_ATtiny44__)
     #else
     byte _SPCR;
     byte _SPSR;
     #endif
 
-    
+
 
     void receiveBegin();
     void setMode(byte mode);

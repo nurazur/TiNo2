@@ -8,7 +8,7 @@ int8_t PacketHandler::calc_packettype(void)
 {
     // prefer SHTC3 over SHT3x and HTU21D in case both are present.
     // currently there is no Packet type for 2 humidity sensors.
-        
+
     if(use.SHTC3)
     {
         use.HTU21D=0;
@@ -38,7 +38,7 @@ int8_t PacketHandler::calc_packettype(void)
     */
     this->extra_temperature_sensor = use.DS18B20 || use.MAX31865;
     this->is_humidity_sensor = use.HTU21D | use.BME280 | use.SHT3X | use.SHTC3 | use.SHT4X;
-    
+
     PacketType = -1;
     if (use.BME280) // has pressure, only Packet type 0 supports it.
     {
@@ -57,11 +57,11 @@ int8_t PacketHandler::calc_packettype(void)
         {
             if (extra_temperature_sensor)  // no pressure, has humidity, has extra temp sensor
             {
-                PacketType = 5; 
+                PacketType = 5;
             }
             else                           // no pressure, has humidity, no additional temp sensor
             {
-                PacketType = 0; 
+                PacketType = 0;
             }
         }
         else // no pressure, no humidity
@@ -70,21 +70,21 @@ int8_t PacketHandler::calc_packettype(void)
             {
                 if (use.DS18B20)
                 {
-                    PacketType = 4;  
+                    PacketType = 4;
                     use.BRIGHTNESS = 0; // packet type 4 cannot have brightness
                 }
-                else //MAX31865 only 
+                else //MAX31865 only
                 {
                     PacketType = 5; //can have brightness
                 }
             }
-            else                            // no explicit temperature sensor on board, i.e for Interrupts only like a remote control -> measure RFM temp sensor 
+            else                            // no explicit temperature sensor on board, i.e for Interrupts only like a remote control -> measure RFM temp sensor
                 PacketType = 0;
         }
     }
-    
-        
-    
+
+
+
     switch (PacketType)
     {
         case 0:

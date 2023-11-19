@@ -37,10 +37,13 @@
 // extended by nurazur nurazur@gmail.com 2014 - 2023
 // the RF protocol is completely binary, see https://github.com/nurazur/tino
 
+#define DEBUG 0
+//#define SENSOR
+#define RECEIVER
 
-#define SKETCHNAME "TiNo2 Receive.ino Ver 26/10/2023"
-#define BUILD 10
 
+#define SKETCHNAME "TiNo2 receive.ino Ver. 18/11/2023"
+#define BUILD 11
 
 #include <avr/sleep.h>
 
@@ -48,61 +51,31 @@
 #define SERIAL_SWAP     0
 HardwareSerial *mySerial = &Serial;
 
+// basically this sketch supports frequency hopping.
+// Working, but It needs to be thoroughly tested though
 #define NUM_CHANNELS 1
 
 
 #include "configuration.h"
 #include <datalinklayer.h>
 #include "PacketHandler.h" // definition of UseBits struct
-
-/* For TiNo-HP, TiNo-LC, TiNo-SW1, TiNo-SW  the RFM69 library is included */
-//#include <RFM69.h>
+#include "print_things.h"
 #include <RFM69.h>
-/* For TiNo-HPCC the CC1101 library is included. comment out the RFM69 library and uncomment the below line. */
-//#include <CC1101.h>
-
-#include <EEPROM.h>
 #include "calibrate.h"
 #include "SHTSensor.h"
+
 #define KEY  "TheQuickBrownFox"
 
-/*****************************************************************************/
-/***                       Actions Struct                                  ***/
-/*****************************************************************************/
-typedef struct {
-  uint8_t node;             // the node to trigger on (the node from which the signal comes)
-  uint8_t pin;             // the pin to trigger
-  uint8_t mask;
-  uint8_t mode:2;           //type of action:  OFF (00) ON(01) TOGGLE (10) PULSE (11)
-  uint8_t duration:5;       //  Pulse length = 2^duration
-  uint8_t default_val:1;    //default on power up, 1= on, 0 = off
-} action;
-
-/*****************************************************************************/
-/***                  I2C Bus Tools                                        ***/
-/*****************************************************************************/
-static void print_humidity_sensor_values(const char* sensorname, float t, float h)
-{  // in the receiver all messages are subject to mess up the decoder that should store the received values in a csv file
-    /*
-    mySerial->print(sensorname);
-    mySerial->print(": ");
-    mySerial->print(t, 2);
-    mySerial->print(" degC, ");
-    mySerial->print(h, 2);
-    mySerial->println(" %rH");
-*/
-}
-
-
+// define this if you use a DS18B20
+// if you don't, code size remains below 32kB so you can use a Atmega3208.
+#define USE_DS18B20
 /*****************************************************************************/
 /***                      Class instances                                  ***/
 /*****************************************************************************/
 RADIO radio;
-//RADIO radio(SS,15,0, digitalPinToInterrupt(15)); // for the 5 V1 Boards only!
 Configuration Config;
 myMAC Mac(radio, Config, (uint8_t*) KEY, mySerial);
 Calibration CalMode(Config, mySerial, &Mac, BUILD, (uint8_t*) KEY);
-
 /*****************************************************************************/
 /******                   Periodic Interrupt Timer and RTC setup         *****/
 /*****************************************************************************/
@@ -118,19 +91,11 @@ ISR(RTC_PIT_vect)
 /*****************************************************************************/
 /***                       Actions                                         ***/
 /*****************************************************************************/
-#define ADR_NUM_ACTIONS sizeof(Configuration)
-#define ADR_ACTIONS   ADR_NUM_ACTIONS + 1
-#define MAX_NUM_ACTIONS 40
-
-#define ON 1
-#define OFF 0
-#define TOGGLE 2
-#define PULSE 3
-
+#include "actions.h"
 
 /* Globals */
-action *actions;
-uint8_t num_actions;
+extern action *actions;
+extern uint8_t num_actions;
 
 /*
 if action.node is equal to the node in the received frame, then the flag word in the frame is evaluated.
@@ -164,101 +129,57 @@ default_val=0; (off is default)
 node = 15;
 pin = 5;
 mask = 0x10;
-mode = 0x3
+mode = 0x3; //PULSE
 duration = 0x2 B=2, 2^B = 4 * 0.125s = 0.5s
 default_val=0; (off is default)
 */
 
+/*
+*/
 
-void doaction (uint8_t nodeid, uint8_t flags, action actions[], uint8_t num_actions, PITControl* Pit);
-
-void doaction (uint8_t nodeid, uint8_t flags, action actions[], uint8_t num_actions, PITControl* Pit)
+// Input sense configuration (ISC)
+void disablePinISC(uint8_t pin)
 {
-    for (uint8_t i=0; i< num_actions; i++)
-    {
-        if(actions[i].node == nodeid) // nodeid matches the actions's nodeId
-        {
-            if (actions[i].mask & flags ) // the action's trigger bit(s) is set
-            {
-                switch (actions[i].mode)// Action mode
-                {
-                    case OFF:     // OFF
-                        digitalWrite(actions[i].pin, 0);
-                        break;
-                    case ON:     // ON
-                        digitalWrite(actions[i].pin, 1);
-                        break;
-                    case TOGGLE:     // Toggle
-                        digitalWrite(actions[i].pin, !digitalRead(actions[i].pin));
-                        break;
-                    case PULSE:     //Pulse
-                        digitalWrite(actions[i].pin, !actions[i].default_val);
-                        uint16_t dur = 1<<actions[i].duration;
-                        dur++;
-                        PIT.start(actions[i].pin, actions[i].default_val, dur);
-                        break;
-                }
-            }
-        }
-    }
+  PORT_t *port = digitalPinToPortStruct(pin);
+  // Get bit position for getting pin ctrl reg
+  uint8_t bit_pos = digitalPinToBitPosition(pin);
+
+  // Calculate where pin control register is
+  volatile uint8_t *pin_ctrl_reg = getPINnCTRLregister(port, bit_pos);
+
+  // Disable ISC
+  *pin_ctrl_reg = PORT_ISC_INPUT_DISABLE_gc;
+}
+
+
+void I2C_shutdown(uint8_t PowerPin)
+{
+    (void)PowerPin;
+}
+
+void I2C_pullup(uint8_t PowerPin)
+{
+    (void)PowerPin;
 }
 
 
 /*****************************************************************************/
 /***              SHT3x and SHTC3  Humidity Sensor                         ***/
 /*****************************************************************************/
-
+#include "sht_sensors.h"
 
 SHTSensor *SHT3X=NULL;
 SHTSensor *SHTC3=NULL;
 SHTSensor *SHT4X=NULL;
 
-uint8_t SHT_Measure(bool enabled, SHTSensor *SHT, float &temperature, float &humidity)
-{
-    uint8_t success=0;
-    if (enabled && SHT)
-    {
-        //mySerial->print("now read sht\n");
-        //pinMode(Config.I2CPowerPin, OUTPUT);
-        digitalWrite(Config.I2CPowerPin, HIGH);
-        Wire.begin(); // ?? brauchts des?
-
-        delay(1);
-        SHT->init();
-
-        if (SHT->readSample())
-        {
-            temperature = SHT->getTemperature();
-            humidity    = SHT->getHumidity();
-            print_humidity_sensor_values("SHT", temperature, humidity);
-            success =  0x48; // according to SHT3X and SHTC3 bit in UseBits
-        }
-        else
-        {
-            mySerial->print("Error in readSample()\n");
-        }
-        //digitalWrite(Config.I2CPowerPin, LOW);
-        //I2C_shutdown(); not required on receiver
-    }
-    return success;
-}
-
+HumiditySensor SensorData;
 
 static bool SHTC3_Init(UseBits &enable)
 {
     if (enable.SHTC3)
     {
-        SHTC3 = new SHTSensor(SHTSensor::SHTC3);
-        mySerial->print("SHTC3: ");
-        enable.SHTC3 = SHTC3->init();
-        if (enable.SHTC3)
-        {
-            mySerial->print("init(): success\n");
-        }
-        else
-        {
-            mySerial->print("init(): failed\n");
-        }
+        enable.SHTC3 = SHT_Init(enable.SHTC3, SHTC3, SHTSensor::SHTC3);
+        print_init_result(enable.SHTC3, "SHTC3");
     }
     return enable.SHTC3;
 }
@@ -267,17 +188,8 @@ static bool SHT3X_Init(UseBits &enable)
 {
     if (enable.SHT3X)
     {
-        SHT3X = new SHTSensor(SHTSensor::SHT3X);
-        mySerial->print("SHT3x: ");
-        enable.SHT3X = SHT3X->init();
-        if (enable.SHT3X)
-        {
-            mySerial->print("init(): success\n");
-        }
-        else
-        {
-            mySerial->print("init(): failed\n");
-        }
+        enable.SHT3X = SHT_Init(enable.SHT3X, SHT3X, SHTSensor::SHT3X);
+        print_init_result(enable.SHT3X, "SHT3X");
     }
    return enable.SHT3X;
 }
@@ -286,20 +198,12 @@ static bool SHT4X_Init(UseBits &enable)
 {
     if (enable.SHT4X)
     {
-        SHT4X = new SHTSensor(SHTSensor::SHT4X);
-        mySerial->print("SHT4x: ");
-        enable.SHT4X = SHT4X->init();
-        if (enable.SHT4X)
-        {
-            mySerial->print("init(): success\n");
-        }
-        else
-        {
-            mySerial->print("init(): failed\n");
-        }
+        enable.SHT4X = SHT_Init(enable.SHT4X, SHT4X, SHTSensor::SHT4X); // just an example how to use the general SHT initialization
+        print_init_result(enable.SHT4X, "SHT4X");
     }
-   return enable.SHT4X;
+    return enable.SHT4X;
 }
+
 
 
 
@@ -314,16 +218,11 @@ static bool HTU21D_Init(UseBits &enable)
     if (enable.HTU21D)
     {
         myHTU21D = new HTU21D(HTU21D_RES_RH12_TEMP14);
-        mySerial->print("HTU21D: ");mySerial->flush();
         enable.HTU21D = myHTU21D->begin();
-        //mySerial->print("HTU21D: debug message");mySerial->flush();
-        if (enable.HTU21D)
+        print_init_result(enable.HTU21D, "HTU21D");
+
+        if (!enable.HTU21D)
         {
-            mySerial->print("init(): success\n");
-        }
-        else
-        {
-            mySerial->print("init(): failed\n");
             delete myHTU21D;
             myHTU21D = NULL;
         }
@@ -332,28 +231,86 @@ static bool HTU21D_Init(UseBits &enable)
 }
 
 
-uint8_t HTU21D_Measure(bool enabled, float &temperature, float &humidity)
+uint8_t HTU21D_Measure(uint8_t enabled, HTU21D *htu21d, HumiditySensor &Data);
+uint8_t HTU21D_Measure(uint8_t enabled, HTU21D *htu21d, HumiditySensor &Data)
 {
     uint8_t success = 0;
-    if (enabled && myHTU21D)
+    if (enabled && htu21d)
     {
-        digitalWrite(Config.I2CPowerPin, HIGH);
-        if (myHTU21D->begin())
+        I2C_pullup(Data.PowerPin);
+
+        if (htu21d->begin())
         {
             delay(50);
-            temperature = myHTU21D->readTemperature();
-            humidity =    myHTU21D->readCompensatedHumidity(temperature);
-            print_humidity_sensor_values("HTU21D",temperature, humidity);
-            success=0x1;
+            Data.temperature = htu21d->readTemperature();
+            Data.humidity =    htu21d->readCompensatedHumidity(Data.temperature);
+            success = enabled;
         }
-        //digitalWrite(Config.I2CPowerPin, LOW);
-        //I2C_shutdown(); // not required in receiver sketch
+
+        I2C_shutdown(Data.PowerPin);
     }
     return success;
 }
 
+/*****************************************************************************/
+/***              One-Wire and DS18B20 Temperature Sensors                 ***/
+/*****************************************************************************/
+#if defined USE_DS18B20
+#include "ds18b20.h"
+#endif
 
 
+
+/*****************************************************************************/
+/***              BME280 air pressure and humidity Sensor                  ***/
+/*****************************************************************************/
+#include <BME280I2C.h>
+
+BME280I2C *BME280;
+
+static bool BME280_Init(UseBits &enable)
+{
+    if(enable.BME280)
+    {
+        BME280 = new BME280I2C();
+        enable.BME280 = BME280->begin();
+        print_init_result(enable.BME280, "BME280");
+        if (!enable.BME280)
+        {
+            delete BME280;
+            BME280=NULL;
+        }
+    }
+    return enable.BME280;
+}
+
+
+uint8_t BME280_Measure(uint8_t enabled, BME280I2C *Bme280, HumiditySensor &Data);
+uint8_t BME280_Measure(uint8_t enabled, BME280I2C *Bme280, HumiditySensor &Data)
+{
+    uint8_t success = 0;
+    if (enabled && Bme280)
+    {
+        I2C_pullup(Data.PowerPin);
+
+        delay(2); // start up time according to data sheet
+        if (Bme280->begin())
+        {
+           BME280I2C::TempUnit tempUnit(BME280I2C::TempUnit_Celsius);
+           BME280I2C::PresUnit presUnit(BME280I2C::PresUnit_hPa);
+
+           Bme280->read(Data.pressure, Data.temperature, Data.humidity, tempUnit, presUnit);
+           success = enabled;
+        }
+        else
+        {
+            mySerial->println("cant read BME280");
+        }
+
+        I2C_shutdown(Data.PowerPin);
+    }
+    return success;
+}
 
 
 
@@ -375,7 +332,7 @@ void wakeUp3() { event_triggered |= 0x8; }
 /*****************************************************************************/
 void activityLed (unsigned char state, unsigned int time = 0)
 {
-  if (Config.LedPin)
+  if (Config.LedPin > 0)
   {
     pinMode(Config.LedPin, OUTPUT);
     if (time == 0)
@@ -392,110 +349,13 @@ void activityLed (unsigned char state, unsigned int time = 0)
 }
 
 
-/*****************************************************************************/
-/*
-     Read VCC by  measuring the 1.5V reference and taking VCC as reference voltage.
-     set the reference to Vcc and the measurement to the internal 1.1V reference
-*/
-/*****************************************************************************/
+
 
 /*****************************************************************************/
 /***                   READ VCC                                            ***/
 /*****************************************************************************/
-
-long Vcal_x_ADCcal = 1500L * 1023L;
-#define SAMPLE_ACCUMULATION 0x5
-
-// possible modes are: INTERNAL0V55, INTERNAL1V1, INTERNAL2V5, INTERNAL4V34, INTERNAL1V5
-// possible modes are: INTERNAL0V55, INTERNAL1V1, INTERNAL2V5, INTERNAL4V34, INTERNAL1V5
-
-#if defined (__AVR_ATmega4808__)
-int analogReadInternalRef(uint8_t mode)
-{
-  #if defined(ADC0)
-
-  // save registers
-  uint8_t vref_ctrla = VREF.CTRLA;
-  uint8_t adc0_muxpos = ADC0.MUXPOS;
-  uint8_t adc0_ctrlb = ADC0.CTRLB;
-
-  // setup DACREF in AC0
-  VREF.CTRLA = (VREF.CTRLA & ~(VREF_AC0REFSEL_gm)) | (mode << VREF_AC0REFSEL_gp);
-
-
-  // Reference should be already set up and should be VDD
-  // ADC0.CTRLC =0b x101 xxxx // 4808
-  // VREF.ADC0REF = VREF_REFSEL_VDD_gc
-
-  // set input to DACREF0
-  ADC0.MUXPOS = ADC_MUXPOS_DACREF_gc;
-
-  // set sample accumulation
-  ADC0.CTRLB = SAMPLE_ACCUMULATION;
-
-  // Start conversion
-  ADC0.COMMAND = ADC_STCONV_bm;
-
-  // Wait for result ready
-  while (!(ADC0.INTFLAGS & ADC_RESRDY_bm))
-    ;
-
-  // restore registers;
-  VREF.CTRLA = vref_ctrla;
-  ADC0.MUXPOS = adc0_muxpos;
-  ADC0.CTRLB = adc0_ctrlb;
-  // Combine two bytes
-  return ADC0.RES;
-
-    #else /* No ADC, return 0 */
-      return 0;
-    #endif
-}
-
-
-#elif defined (ARDUINO_avrdd)
-int analogReadInternalRef(uint8_t mode)
-{
-    (void) mode;
-    // set reference to VDD
-    VREF.ADC0REF = VREF_REFSEL_VDD_gc;
-
-    // set DAC0REF to 1.024V
-    VREF.DAC0REF = VREF_REFSEL_1V024_gc;
-
-    // set input to DACREF0
-    ADC0.MUXPOS = ADC_MUXPOS_DACREF0_gc;
-
-    // set bitb resolution and conversion mode (single ended)
-     ADC0.CTRLA = ADC_CONVMODE_SINGLEENDED_gc | ADC_RESSEL_10BIT_gc | ADC_ENABLE_bm; //Freerun and enable
-    // set sample accumulation
-    ADC0.CTRLB = SAMPLE_ACCUMULATION;
-
-    // Start conversion
-    ADC0.COMMAND = ADC_STCONV_bm;
-
-    // Wait for result ready
-    while (!(ADC0.INTFLAGS & ADC_RESRDY_bm))
-        ;
-
-    // Combine two bytes
-    return ADC0.RES;
-}
-#endif
-
-long readVcc()
-{
-    #if defined (__AVR_ATmega4808__)
-        return analogReadInternalRef(INTERNAL1V5) / (1<<SAMPLE_ACCUMULATION);
-    #elif defined (ARDUINO_avrdd)
-       return analogReadInternalRef(VREF_REFSEL_1V024_gc);
-    #endif
-}
-
-float getVcc(long vref)
-{
-    return (float)vref / readVcc();
-}
+#include "analog.h"
+long Vcal_x_ADCcal;
 
 /**********************************************************************/
 /*    each interrupt occupies 2 bits in serial protocol definition    */
@@ -581,74 +441,8 @@ static bool rolling_code_is_valid(byte nodeid, byte count_new)
     return packet_is_valid;
 }
 */
+
 /*****************************************************************************/
-/****                        SIGROW                                       ****/
-/*****************************************************************************/
-// Serial Number consists of 10 Bytes.
-// The first 6 Bytes are printable characters.
-// the last 4 Bystes are the actual serial number.
-
-typedef struct
-{
-    char prefix[7];
-    union
-    {
-        uint8_t sn_char[4];
-        uint32_t sn;
-    };
-} SerialNumber;
-
-
-
-void print_serial_number()
-{
-    uint8_t* sernum_addr = (uint8_t*)&SIGROW.SERNUM0;
-    int i;
-    Serial.print("Serial Number ");
-    #if defined (ARDUINO_avrdd)
-
-    #if defined __AVR_AVR64DD32__
-    Serial.print("AVR64DD32: ");
-    #elif defined __AVR_AVR64DD28__
-    Serial.print("AVR64DD28: ");
-    #else
-    Serial.print("AVRxxDDxx: ");
-    #endif
-    // AVRxxDDxx have 16 Bytes
-    for (i=0;  i<16; i++)
-    {
-        uint8_t sni = *sernum_addr;
-        Serial.print(sni,HEX);
-        Serial.print(" ");
-        sernum_addr++;
-    }
-
-
-    #else
-    #if defined (__AVR_ATmega4808__)
-    Serial.print("ATMEGA4808: ");
-    #endif
-    SerialNumber SN;
-    for (i=0; i<6; i++)
-    {
-        SN.prefix[i] = (char) *sernum_addr;
-        sernum_addr++;
-    }
-    SN.prefix[6]=0;
-
-    for (i=0; i<4; i++)
-    {
-        SN.sn_char[i] = *sernum_addr;
-        sernum_addr++;
-    }
-
-    Serial.print(SN.prefix); Serial.print(" "); Serial.println(SN.sn);
-    #endif
-}
-/*****************************************************************************/
-
-
-
 unsigned long MeasurementIntervall_ms;
 unsigned long last_measurement_millis=0;
 
@@ -656,15 +450,12 @@ unsigned long last_measurement_millis=0;
 float frec[NUM_CHANNELS];
 #endif
 
+
+/*****************************************************************************/
+/****                        SETUP                                        ****/
+/*****************************************************************************/
 void setup()
 {
-    /***  INITIALIZE SERIAL PORT ***/
-
-    #ifdef SOFTSERIAL
-        pinMode(RX_PIN, INPUT);
-        pinMode(TX_PIN, OUTPUT);
-    #endif
-
     // serial port, enable RX pin
     pinConfigure(1, PIN_DIR_INPUT, PIN_PULLUP_ON, PIN_INPUT_ENABLE);
     mySerial->swap(SERIAL_SWAP);
@@ -680,16 +471,13 @@ void setup()
 
     /*** Print Logo ***/
     mySerial->println("  _______   _   _   _           ___");
-
     mySerial->println(" |__   __| (_) | \\ | |         |__ \\");
-
     mySerial->println("    | |     _  |  \\| |   ___      ) |");
     mySerial->println("    | |    | | | . ` |  / _ \\    / / ");
     mySerial->println("    | |    | | | |\\  | | (_) |  / /_");
     mySerial->println("    |_|    |_| |_| \\_|  \\___/  |____|");
     mySerial->println("    by nurazur\r\n");
-
-    print_serial_number();
+    print_serial_number(mySerial);
 
     /***********************************************************/
     // normal initialization starts here
@@ -709,62 +497,16 @@ void setup()
     frec[3]= 868.0;
     #endif
 
+
+
     /*********************************************************/
     /*************  INITIALIZE ACTOR MODULE ******************/
     /*********************************************************/
-    EEPROM.get(ADR_NUM_ACTIONS, num_actions);
 
-    //mySerial->print("size of Config: "); mySerial->println(sizeof(Configuration)); mySerial->flush();
+    init_actions(mySerial);
 
-    if (num_actions > 0 && num_actions <= MAX_NUM_ACTIONS)
-    {
-        mySerial->print("number of actions: "); mySerial->println(num_actions);
-        actions = new action[num_actions];
-    }
-    else
-    {
-        num_actions = 0;
-        actions = NULL;
-    }
-
-    for(int i=0; i< num_actions; i++)
-    {
-        EEPROM.get(ADR_ACTIONS + i*sizeof(action), actions[i]);
-    }
-
-    if (num_actions > 0)
-    {
-        // verify the checksum
-        uint16_t cs_from_eeprom;
-        EEPROM.get(ADR_ACTIONS + MAX_NUM_ACTIONS * sizeof(action), cs_from_eeprom);
-        uint16_t cs_from_data = CalMode.checksum_crc16((uint8_t*) actions, sizeof(action) * num_actions);
-
-        if ((cs_from_eeprom ^ cs_from_data) != 0)
-        {
-            mySerial->println("Checksum incorrect for Actions.");
-            num_actions =0;
-        }
-
-        /*
-        for(int i=0; i< num_actions; i++)
-        {
-            pinMode(actions[i].pin, OUTPUT);
-            digitalWrite(actions[i].pin, actions[i].default_val);
-
-            Serial.print("\nnode :"); Serial.println(actions[i].node);
-            Serial.print("mask :"); Serial.println(actions[i].mask);
-            Serial.print("pin :"); Serial.println(actions[i].pin);
-            Serial.print("dur. :"); Serial.println(actions[i].duration);
-            Serial.print("mode :"); Serial.println(actions[i].mode);
-            Serial.print("def. :"); Serial.println(actions[i].default_val);
-        }
-        */
-    }
-
-    //for (int j=0; j <=15; j++)
-    //{Serial.print(j); Serial.print(" "); Serial.print(int(pow(1.982864, j)));Serial.print(" "); Serial.println(int(pow(1.982864, j))*0.125,3); }
     /*********************************************************/
-    PIT.init();
+    PIT.init(Config.UseCrystalRtc);
     PIT.disable();
 
     /***                              ***/
@@ -818,6 +560,8 @@ void setup()
           pinMode(Config.PCI3Pin, Config.PCI3Mode);
           register_pci(3, Config.PCI3Pin, wakeUp3, Config.PCI3Trigger);
       }
+
+
         // initialize PIR Sensor, if configured
         // it will be still for 3 cycles.
         // PIR shares the event flag with PCI1. PCI1 remains active, if specified.
@@ -841,6 +585,26 @@ void setup()
     SHTC3_Init(*u);
     SHT4X_Init(*u);
 
+    #if defined USE_DS18B20
+    if (u->DS18B20)
+    {
+        uint8_t num_ds18b20 = DS18B20_Init (u->DS18B20, Config.OneWirePowerPin, Config.OneWireDataPin);
+        if (num_ds18b20==0) u->DS18B20=0;
+    }
+    #endif
+
+    BME280_Init(*u);
+
+    // Initialize LDR, if enabled
+    if (u->BRIGHTNESS)
+    {
+        u->BRIGHTNESS = LDR_Init(Config.LdrPin);
+        if (u->BRIGHTNESS)
+            mySerial->println("LDR initialized.");
+        else
+            mySerial->println("LDR NOT initialized.");
+    }
+
 
      /***  INITIALIZE RADIO MODULE ***/
     mySerial->print("RF Chip = "); Config.IsRFM69HW ?    mySerial->print("RFM69HCW") : mySerial->print("RFM69CW");  mySerial->println();
@@ -848,10 +612,10 @@ void setup()
 
     Mac.radio_begin();  // re-initialize radio
 
-  if (Config.LedPin)
-  {
-      activityLed(1, 1000); // LED on
-  }
+    if (Config.LedPin)
+    {
+        activityLed(1, 1000); // LED on
+    }
 }
 
 
@@ -890,7 +654,7 @@ void loop()
                 extract_interrupts(pl->flags);
 
                 //bool rolling_code_ok = rolling_code_is_valid(pl->nodeid, pl->count);
-                Serial.flush();
+                mySerial->flush();
                 //if (Mac.rxpacket.errorcode >=0 && rolling_code_ok)
                 if (Mac.rxpacket.errorcode >=0)
                 {
@@ -942,7 +706,7 @@ void loop()
                         break;
                     case 4:
                         {
-                            //Serial.println("Type 4");
+                            //mySerial->println("Type 4");
                             PacketType4 *pl = (PacketType4*) Mac.rxpacket.payload;
                             mySerial->print("v=");    mySerial->print(pl->supplyV);
                             mySerial->print("&c=");   mySerial->print(pl->count);
@@ -1048,26 +812,88 @@ void loop()
             last_measurement_millis = millis() + MeasurementIntervall_ms;
 
             // measure temperature
-            float t, h=0;
+            float temperature;
             UseBits *u;
             u = (UseBits*)&Config.SensorConfig;
 
 
             uint8_t success =0;
-            success |=  HTU21D_Measure(u->HTU21D, t,h);
-            success |= SHT_Measure(u->SHT3X, SHT3X, t, h);
-            success |= SHT_Measure(u->SHTC3, SHTC3, t, h);
-            success |= SHT_Measure(u->SHT4X, SHT4X, t, h);
-            if (!success)
+            success |= HTU21D_Measure(Config.SensorConfig & HTU21D_bm, myHTU21D, SensorData);
+            if (success & HTU21D_bm)
             {
-                t = radio.readTemperature(0) + Config.radio_temp_offset/10.0;
+                print_humidity_sensor_values("HTU21D", SensorData.temperature, SensorData.humidity, mySerial);
             }
+
+            success |= SHT_Measure(Config.SensorConfig & SHT3X_bm, SHT3X, SensorData);
+            if (success & SHT3X_bm)
+            {
+                print_humidity_sensor_values("SHT3x", SensorData.temperature, SensorData.humidity, mySerial);
+            }
+
+            success |= SHT_Measure(Config.SensorConfig & SHTC3_bm, SHTC3, SensorData);
+            if (success & SHTC3_bm)
+            {
+                print_humidity_sensor_values("SHTC3", SensorData.temperature, SensorData.humidity, mySerial);
+            }
+
+            success |= SHT_Measure(Config.SensorConfig & SHT4X_bm, SHT4X, SensorData);
+            if (success & SHT4X_bm)
+            {
+                print_humidity_sensor_values("SHT4X", SensorData.temperature, SensorData.humidity, mySerial);
+            }
+
+            success |= BME280_Measure(Config.SensorConfig & BME280_bm, BME280, SensorData);
+            if (success & BME280_bm)
+            {
+                print_humidity_sensor_values("BME280", SensorData.temperature, SensorData.humidity, mySerial);
+            }
+
+            if(success)
+            {
+                temperature = SensorData.temperature;
+            }
+            else
+            {
+                temperature = radio.readTemperature(0) + Config.radio_temp_offset/10.0;
+            }
+
+            // brightness
+            uint16_t br;
+
+            #if defined USE_DS18B20
+            // Dallas DS18B20 Measurement
+            uint8_t num_ds18b20=0;
+            float t[3];
+            if(u->DS18B20)
+            {
+                t[0]=t[1]=t[2]=0;
+                num_ds18b20 = DS18B20_Measure(u->DS18B20, t, Config.OneWirePowerPin);
+            }
+            #endif
 
             mySerial->print(Config.Nodeid); mySerial->print(" ");
             mySerial->print("v=");   mySerial->print((uint16_t)getVcc(Vcal_x_ADCcal));
             mySerial->print("&c=");  mySerial->print(++count);
-            mySerial->print("&t=");  mySerial->print(t*100,0);
-            mySerial->print("&h=");  mySerial->print(h*100,0);
+            mySerial->print("&t=");  mySerial->print(temperature*100,0);
+
+            #if defined USE_DS18B20
+            for (uint8_t i=0; i<num_ds18b20; i++)
+            {
+                mySerial->print("&t"); mySerial->print(i); mySerial->print("="); mySerial->print(t[i]*100,0);
+            }
+            #endif
+
+            mySerial->print("&h=");  mySerial->print(SensorData.humidity*100,0);
+            if (success & BME280_bm)
+            {
+                mySerial->print("&p=");  mySerial->print((uint32_t)floor(SensorData.pressure*100),0);
+            }
+
+            if (LDR_Measure(u->BRIGHTNESS, Config.LdrPin, br))
+            {
+                mySerial->print("&br="); mySerial->print(br);
+            }
+
             mySerial->print("&f=");
             if (event_triggered)
             {
@@ -1087,7 +913,6 @@ void loop()
                 mySerial->print("&fo=");  mySerial->print((int)(fo_steps*radio.FSTEP));
             }
             */
-
 
             mySerial->println();
         }

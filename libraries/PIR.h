@@ -34,14 +34,14 @@ class PIRModule
     public:
         PIRModule(Configuration& C, Stream* S,  void (*U)(void));
         void init(void);
-        
+
         void triggered(uint8_t event);
         void check_deadtime(void);
-        
+
         uint16_t pir_counter;
         bool pir_is_off;
         bool pir_enabled;
-    
+
     private:
         void registerDevice(void);
         void unregister(void);

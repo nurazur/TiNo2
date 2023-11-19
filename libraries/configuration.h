@@ -32,8 +32,9 @@
 Version = 5
 Fits Build 7 and later
 */
-#ifndef configuration
-#define configuration
+#ifndef CONFIGURATION_H
+#define CONFIGURATION_H
+
 #include <Arduino.h>
 
 #define EEPROMVERSIONNUMBER 9
@@ -63,12 +64,12 @@ typedef struct
     byte SCLPin = 3;    // unused with 4808
     byte OneWireDataPin=10;
     byte I2CPowerPin = 8;
-    
+
     char PCI0Pin=13;// 30
     byte PCI0Trigger:3; // Change/Falling/Rising = 2/0/1
     byte PCI0Mode:5; // 0= INPUT, 2 = INPUT_PULLUP
     byte PCI0Gatewayid =22;
-    
+
     char PCI1Pin=12; //33
     byte PCI1Trigger:3;
     byte PCI1Mode:5; // 0= INPUT, 2 = INPUT_PULLUP
@@ -78,12 +79,12 @@ typedef struct
     byte PCI2Trigger:3;
     byte PCI2Mode:5; // 0= INPUT, 2 = INPUT_PULLUP
     byte PCI2Gatewayid =22;
-    
+
     char PCI3Pin=-1;  //39
     byte PCI3Trigger:3;
     byte PCI3Mode:5; // 0= INPUT, 2 = INPUT_PULLUP
     byte PCI3Gatewayid =22;
-    
+
     byte UseCrystalRtc=0; //42
     byte EncryptionEnable=1;
     byte FecEnable =1;
@@ -125,12 +126,12 @@ Configuration;
     byte OneWirePowerPin = 9;
     byte OneWireDataPin=10;
     byte I2CPowerPin = 8;
-    
+
     char PCI0Pin=13;// 30
     byte PCI0Trigger:3; // Change/Falling/Rising = 2/0/1
     byte PCI0Mode:5; // 0= INPUT, 2 = INPUT_PULLUP
     byte PCI0Gatewayid =22;
-    
+
     char PCI1Pin=12; //33
     byte PCI1Trigger:3;
     byte PCI1Mode:5; // 0= INPUT, 2 = INPUT_PULLUP
@@ -140,12 +141,12 @@ Configuration;
     byte PCI2Trigger:3;
     byte PCI2Mode:5; // 0= INPUT, 2 = INPUT_PULLUP
     byte PCI2Gatewayid =22;
-    
+
     char PCI3Pin=-1;  //39
     byte PCI3Trigger:3;
     byte PCI3Mode:5; // 0= INPUT, 2 = INPUT_PULLUP
     byte PCI3Gatewayid =22;
-    
+
     byte UseCrystalRtc=0; //42
     byte EncryptionEnable=1;
     byte FecEnable =1;
@@ -186,14 +187,14 @@ Configuration;
     byte RTDCSPin = 11;
     byte OneWirePowerPin = 9;
     byte OneWireDataPin=10;
-    byte I2CPowerPin = 8;
-    
-    
+    char I2CPowerPin = 8;
+
+
     char PCI0Pin=13;// 30
     byte PCI0Trigger:3; // Change/Falling/Rising = 4/2/3
     byte PCI0Mode:5; // 0= INPUT, 2 = INPUT_PULLUP
     byte PCI0Gatewayid =22;
-    
+
     char PCI1Pin=12; //33
     byte PCI1Trigger:3;
     byte PCI1Mode:5; // 0= INPUT, 2 = INPUT_PULLUP
@@ -203,25 +204,25 @@ Configuration;
     byte PCI2Trigger:3;
     byte PCI2Mode:5; // 0= INPUT, 2 = INPUT_PULLUP
     byte PCI2Gatewayid =22;
-    
+
     char PCI3Pin=-1;  //39
     byte PCI3Trigger:3;
     byte PCI3Mode:5; // 0= INPUT, 2 = INPUT_PULLUP
     byte PCI3Gatewayid =22;
-    
+
     /*
     char PCIPin[4];
-    byte PCI0Trigger:3 
+    byte PCI0Trigger:3
     byte PCI0Mode:5;
-    byte PCI1Trigger:3 
+    byte PCI1Trigger:3
     byte PCI1Mode:5;
-    byte PCI2Trigger:3 
+    byte PCI2Trigger:3
     byte PCI2Mode:5;
-    byte PCI3Trigger:3 
+    byte PCI3Trigger:3
     byte PCI3Mode:5;
     byte PCIGatewayid[4];
     */
-    
+
     byte UseCrystalRtc=0; //42
     byte EncryptionEnable=1;
     byte FecEnable =1;
@@ -238,4 +239,4 @@ Configuration;
 Configuration;
 #endif
 
-#endif // configuration
+#endif // CONFIGURATION_H

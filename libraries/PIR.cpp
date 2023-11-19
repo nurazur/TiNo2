@@ -42,7 +42,7 @@ PIRModule::PIRModule(Configuration& C, Stream* S, void (*U)(void)) :  serial(S),
 
 // call this function in setup()
 // the function enables the PIR functionality and turns the PIR off for 3 wake-up periods (usually one period is 8s)
-// 
+//
 void PIRModule::init(void)
 {
     pir_counter = Cfg.PirDeadTime -3;
@@ -94,7 +94,7 @@ void PIRModule::triggered(uint8_t event)
 }
 
 
-// check if the dead time has expired. 
+// check if the dead time has expired.
 // in case it has expired, activate the PIR
 void PIRModule::check_deadtime(void)
 {

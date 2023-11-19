@@ -55,7 +55,7 @@ void myMAC::radio_begin(void)
     //radio.setFrequency((Cfg.frequency * 1000000)/radio.FSTEP + Cfg.FedvSteps);
     radio.setDataShaping (Cfg.TXGaussShaping);
     radio.setPowerLevel  (Cfg.TxPower);
-    #if DEBUG > 0 
+    #if DEBUG > 0
     serial->print("freq = "); serial->println(Cfg.frequency);
     serial->print("FSTEP: "); serial->println(radio.FSTEP,6);
     serial->print("FDEV: "); serial->println(Cfg.FedvSteps);

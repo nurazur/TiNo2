@@ -156,7 +156,7 @@ bool RFM69::initialize(byte freqBand, byte networkID, byte txpower)
 
   setMode(RF69_MODE_STANDBY);
   while ((readReg(REG_IRQFLAGS1) & RF_IRQFLAGS1_MODEREADY) == 0x00); // Wait for ModeReady
-  
+
   #if defined(__AVR_ATmega3208__) || defined(__AVR_ATmega4808__)
   attachInterrupt(_interruptPin, RFM69::isr0, CHANGE); // MegaCoreX does work only for CHANGE mode
   #else

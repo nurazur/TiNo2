@@ -21,14 +21,14 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-// Licence can be viewed at                               
-// http://www.fsf.org/licenses/gpl.txt                    
+// Licence can be viewed at
+// http://www.fsf.org/licenses/gpl.txt
 
 // Please maintain this license information along with authorship
 // and copyright notices in any redistribution of this code
 // *********************************************************************************
 
-#include <Arduino.h>   
+#include <Arduino.h>
 #ifndef CALIBRATION
 #define CALIBRATION
 
@@ -44,40 +44,40 @@ uint8_t count;
 float stddev=0;
 bool success;
 int temperature;
-} FeiMeasurement; 
+} FeiMeasurement;
 
 class Calibration
 {
     public:
       Calibration (Configuration& C, Stream* S, myMAC* Mac=NULL, int softwarebuild=0, uint8_t *encryptionkey = NULL);
       Calibration (Configuration& C, Stream* S, int softwarebuild=0);
-      
-            
+
+
       // calculates the checksum over the configuration data stored in EEprom
       uint16_t checksum(void);
       uint16_t checksum_crc16(uint8_t *data, uint8_t datalen);
-      
-      // calculates the checksum over configuration data stored in EEprom and 
+
+      // calculates the checksum over configuration data stored in EEprom and
       // compares to the checksum value stored in EEprom.
       bool verify_checksum(void);
-      bool verify_checksum_crc16(void);   
+      bool verify_checksum_crc16(void);
       // actual calibration routine
-      void calibrate(); 
-      
-      // check EEPROM and enter Calibratiion mode if there is a problem 
-      // check if there is a request from a calibration program to enter calibration state. 
+      void calibrate();
+
+      // check EEPROM and enter Calibratiion mode if there is a problem
+      // check if there is a request from a calibration program to enter calibration state.
       void configure();
-      
+
       // receives a reference meassage and measures the FEI 10x, takes the aveage and retursn the result in the FeiMeasurement structure
       bool radio_fei_cal(FeiMeasurement &fei);
 
     protected:
       void error_message(char* msg);
-      
+
       // parser for strings received over serial port
       bool parse (char* str2parse);
       bool authenticate (char* str2parse);
-    
+
     private:
         Stream *serial;
         Configuration &Cfg;

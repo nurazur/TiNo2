@@ -34,8 +34,8 @@ Functions for interactive calibration and eeprom access over serial port
 
 ***/
 
-extern float getVcc(long);
-extern long  readVcc();
+//extern float getVcc(long);
+//extern long  readVcc();
 extern void activityLed (unsigned char state, unsigned int time=0);
 
 
@@ -44,6 +44,7 @@ extern void activityLed (unsigned char state, unsigned int time=0);
 #include "datalinklayer.h"
 #include "calibrate.h"
 #include "codec.h"
+#include "analog.h"
 
 Calibration::Calibration(Configuration& C, Stream* S, myMAC* M, int softwarebuild, uint8_t* E) : serial(S), Cfg(C), Mac(M), SoftwareVersion(softwarebuild),encryption_key(E)
 {
@@ -393,7 +394,7 @@ bool Calibration::parse (char* str2parse)
 void Calibration::calibrate()
 {
     bool cal_done = false;
-    long tstart=millis();;
+    long tstart=millis();
     unsigned char  led =0;
     uint8_t i=0;
     char inputstr[MAXINPUTSTRINGLENGTH];
@@ -506,7 +507,7 @@ void Calibration::configure()
         }
         if (!done)
         {
-            #if DEBUG > 0 
+            #if DEBUG > 0
             serial->println("start app");
             #endif
         }

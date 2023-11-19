@@ -3,7 +3,7 @@
 /**********************************************************************/
 /* this class is intended to be used by the receiver.
 ** When actions are handled by the receiver, and a action requests a Pulse to be run, we enable the PIT.
-** The ISR counts until the programmed time is over and then disables the PIT. During the time the PIT is run, the receiver works as normal. 
+** The ISR counts until the programmed time is over and then disables the PIT. During the time the PIT is run, the receiver works as normal.
 ***/
 
 // **********************************************************************************
@@ -36,32 +36,37 @@
 // and copyright notices in any redistribution of this code
 // *********************************************************************************
 
+#ifndef PITCTRL_H
+#define PITCTRL_H
+
 
 // select external 32768Hz clock or internal 1024 Hz clock
 #define USE_OSC32K 1
 #define USE_ULP32K 0
-#define PITCLOCKGEN 0
+#define PITCLOCKGEN USE_ULP32K
 
 
 class PITControl
 {
     public:
         PITControl(void){}
-        
-        void init(uint8_t ClockGen = PITCLOCKGEN); // setup the clock generator, enable interrup, but do not start the PIT
+
+        void init(uint8_t ClockGen = PITCLOCKGEN, uint8_t receiver =1); // setup the clock generator, enable interrupt, but do not start the PIT
         void enable(); // starts the PIT
         void disable(); // stops the pIT
         void interrupthandler(); // handles PIT interrupts
         void start(uint8_t pin, uint8_t default_val, uint16_t duration);
 
-            
+
         uint8_t  pulse_port=0;
         uint16_t pulse_duration=2;
         uint8_t  pulse_port_default=0; // normally on or off
         uint32_t t_start; // for debug purposes only!
-    
-    protected:
-    
+
+    //protected:
+
     void RTC_ULP32k_init(void);
     void RTC_setCrystal();
 }; // end of PITControl
+
+#endif // PITCTRL_H

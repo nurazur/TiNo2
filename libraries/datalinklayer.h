@@ -61,14 +61,14 @@ typedef struct
    uint16_t count :8;
    uint16_t temp :12;   // Temperature reading
    uint8_t humidity;    // Humidity reading
-   
+
    // optionally 4 more Bytes with pressure and brightness.
    uint32_t pressure : 22;
    uint32_t brightness : 10; // brightness or any other analog value.
 }  Payload; // aka PacketType0
 
 
-// Type to transmit strings, string length = 7 bytes, 
+// Type to transmit strings, string length = 7 bytes,
 // Packet length:12 bytes
 typedef struct
 {
@@ -165,7 +165,7 @@ typedef struct
    uint8_t count;
    uint8_t packet_type = 6;  // must be 6
    uint8_t alarm_type; // signals which sensor sends an alarm
-   uint16_t value; 
+   uint16_t value;
 } PacketType6;
 
 
@@ -210,7 +210,7 @@ class myMAC {
         bool radio_send(uint8_t *data, uint8_t datalen, uint8_t requestAck=0);
         bool radio_send(uint8_t *data, uint8_t datalen, uint8_t requestAck, int16_t temperature);
         uint8_t radio_read_temperature(uint8_t correction=0);
-        
+
         RadioRxPacket rxpacket;
         const uint8_t *encryption_key=NULL;
     private:

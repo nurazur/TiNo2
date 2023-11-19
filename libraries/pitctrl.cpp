@@ -30,35 +30,45 @@
 
 #include "Arduino.h"
 #include "pitctrl.h"
-void PITControl::init(uint8_t ClockGen)
+void PITControl::init(uint8_t ClockGen, uint8_t receiver)
+{
+    //(void) receiver;
+    //C:\Program Files (x86)\Arduino\hardware\tools\avr\avr\include\avr\iom4808.h
+    //RTC.PITINTCTRL = RTC_PI_bm | RTC_PITEN_bm;
+
+    RTC.PITINTCTRL = RTC_PI_bm;
+    if (ClockGen == USE_ULP32K) // internal 1024Hz Clock
     {
-        //C:\Program Files (x86)\Arduino\hardware\tools\avr\avr\include\avr\iom4808.h
-        //RTC.PITINTCTRL = RTC_PI_bm | RTC_PITEN_bm;
-        
-        RTC.PITINTCTRL = RTC_PI_bm;
-        if (ClockGen == USE_ULP32K) // internal 1024Hz Clock
-        {   
-            RTC.PITCTRLA   = RTC_PERIOD_CYC128_gc;
-            this->RTC_ULP32k_init();
-        }
-        else
-        {   // crystal runs on 32768 Hz
-            RTC.PITCTRLA = RTC_PERIOD_CYC4096_gc;
-            this->RTC_setCrystal();
-        }
+        if (receiver) RTC.PITCTRLA = RTC_PERIOD_CYC128_gc; // 1024 Hz / 128 = 8Hz (period 125ms)
+        else          RTC.PITCTRLA = RTC_PERIOD_CYC8192_gc; // 1024 Hz/ 8192 = 1/8hz (period 8s)
+        while(RTC.PITSTATUS);
+        this->RTC_ULP32k_init();
     }
+    else
+    {   // crystal runs on 32768 Hz
+        if (receiver)
+            RTC.PITCTRLA = RTC_PERIOD_CYC4096_gc; // 32768 / 4096 = 8 Hz (period 1/8 s  = 125 ms)
+        else
+            RTC.PITCTRLA = RTC_PERIOD_CYC32768_gc; // 32768 / 32768 = 1Hz (period 1s, maximum)
+
+        while(RTC.PITSTATUS);
+        this->RTC_setCrystal();
+    }
+}
 
     void PITControl::enable(void)
     {
         RTC.PITCTRLA   |= RTC_PITEN_bm;
+        while(RTC.PITSTATUS);
     }
 
 
     void PITControl::disable()
     {
         RTC.PITCTRLA   &= ~RTC_PITEN_bm;
+        while(RTC.PITSTATUS);
     }
-    
+
     void PITControl::interrupthandler(void)
     {
         RTC.PITINTFLAGS = RTC_PI_bm;              // clear interrupt flag
@@ -74,14 +84,14 @@ void PITControl::init(uint8_t ClockGen)
             }
         }
     }
-        
-   
+
+
     void PITControl::RTC_ULP32k_init(void)
     {
-        RTC.CLKSEL = RTC_CLKSEL_INT1K_gc;         // Internal 1024 Hz OSC 
+        RTC.CLKSEL = RTC_CLKSEL_INT1K_gc;         // Internal 1024 Hz OSC
     }
-    
-    void PITControl::RTC_setCrystal() 
+
+    void PITControl::RTC_setCrystal()
     {
         uint8_t temp;
 
@@ -103,8 +113,12 @@ void PITControl::init(uint8_t ClockGen)
         // enable the oscillator
         temp = CLKCTRL.XOSC32KCTRLA;
         temp |= CLKCTRL_ENABLE_bm | CLKCTRL_RUNSTDBY_bm;
+        #if defined ARDUINO_avrdd
+        temp |= CLKCTRL_LPMODE_bm;
+        #endif
         CPU_CCP = CCP_IOREG_gc;
         CLKCTRL.XOSC32KCTRLA = temp;
+
 
         // wait for all registers to be synchronized
         while (RTC.STATUS > 0);
@@ -118,10 +132,10 @@ void PITControl::init(uint8_t ClockGen)
         #endif
     }
 
-    
+
     void PITControl::start(uint8_t pin, uint8_t default_val, uint16_t duration)
     {
-        this->pulse_duration = duration; // count number        
+        this->pulse_duration = duration; // count number
         this->pulse_port_default = default_val;
         this->t_start= millis(); // debug only
         this->pulse_port = pin;
