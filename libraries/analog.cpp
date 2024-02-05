@@ -117,7 +117,9 @@ int analogReadInternalRef(uint8_t mode)
 }
 
 
-
+/*
+     Read VCC by  measuring the internal 1.5V (4808) / 1.024V (AVR DD) reference and using VCC as ADC reference voltage.
+*/
 long readVcc()
 {
     #if defined (__AVR_ATmega4808__)
@@ -136,10 +138,6 @@ float getVcc(long vref)
 /*****************************************************************************/
 /***                   READ MCU TEMPERATURE                                ***/
 /*****************************************************************************/
-/*
-     Read VCC by  measuring the internal 1.5V (4808) / 1.024V (AVR DD) reference and using VCC as ADC reference voltage.
-*/
-
 float readMcuTemperaure(void)
 {
 #if defined (MEGACOREX)

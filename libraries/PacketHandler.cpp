@@ -75,10 +75,13 @@ int8_t PacketHandler::calc_packettype(void)
                 }
                 else //MAX31865 only
                 {
-                    PacketType = 5; //can have brightness
+                    if (use.BRIGHTNESS)
+                        PacketType = 5; //has brightness
+                    else
+                        PacketType = 0; // no brightness, only one temp sensor.
                 }
             }
-            else                            // no explicit temperature sensor on board, i.e for Interrupts only like a remote control -> measure RFM temp sensor
+            else               // no explicit temperature sensor on board, i.e for Interrupts only like a remote control -> measure RFM temp sensor
                 PacketType = 0;
         }
     }

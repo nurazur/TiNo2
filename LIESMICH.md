@@ -10,12 +10,11 @@ Ziel dieses Projekts ist die Entwicklung schnurloser Funk Sensoren,
     die über Batterien versorgt werden und z.B. mit dem Raspberry Pi kommunizieren.
     Die Entwicklung hat zum Ziel:
 
-- minimale Kosten (Stückkosten unter 5 EUR, Stand 2020)
-- minimale Grösse (Streichholzschachtel)
-- minimaler Stromverbrauch
-- maximale Batterielebensdauer (5 Jahre oder mehr)
-- maximale Reichweite
-- maximal einfach nachzubauen
+- geringst mögliche Kosten (Stückkosten unter 5 EUR, Stand 2020, ca. 8 EUR Stand 2023)
+- kleinst möglicher Form Faktor (Streichholzschachtel)
+- geringst möglicher Stromverbrauch,  maximale Batterielebensdauer (5 Jahre oder mehr)
+- möglichst grosse Reichweite
+- moeglichst einfachster Nachbau
 - Plug&Play Firmware
 
 Als Sensor kann man so ziemlich alles verwenden, ob Temperatur, Luftfeuchtigkeit, Luftdruck, Höhenmesser, Lichtintensität, UV Index,
@@ -93,18 +92,18 @@ dadurch kostengünstig zu beschaffen.
 2. Installiere TiNo2 Bibliotheken
 
 ## Installation von MegaCoreX ueber Boards Manager
-* Open Arduino IDE.
-* Open the **File > Preferences** menu item.
-* Enter the following URL in **Additional Boards Manager URLs**:
+* Arduino IDE starten.
+* `File->Preferences` öffnen.
+* Unter `Additional Boards Manager URL's` diesen Link eintragen:
     ```
     https://mcudude.github.io/MegaCoreX/package_MCUdude_MegaCoreX_index.json
     ```
-* Separate the URLs using a comma ( **,** ) if you have more than one URL
-* Open the **Tools > Board > Boards Manager...** menu item.
-* Wait for the platform indexes to finish downloading.
-* Scroll down until you see the **MegaCoreX** entry and click on it.
-* Click **Install**.
-* After installation is complete close the **Boards Manager** window.
+* Einträge mit einem Komma ( **,** ) trennen, wenn es mehr als einen URL Eintrag gibt.
+* Boards Manager öffnen: Auf **Tools > Board > Boards Manager...** Klicken.
+* Jetzt werden die vorhandenen Platformen heruntergeladen. Warte bis der Vorgang beendet ist.
+* Suche den Eintrag **MegaCoreX** und klicke drauf.
+* Klick **Install**.
+* Nachdem der Installationsvorgang beendet ist, schliesse das **Boards Manager** Fenster.
 
 ## Manuelle Installation der MegacoreX Bibliothek
 Click on the "Download ZIP" button. Extract the ZIP file, and move the extracted folder to the location "**~/Documents/Arduino/hardware**". Create the "hardware" folder if it doesn't exist.
