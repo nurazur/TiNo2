@@ -1,6 +1,7 @@
 // RFM69CW Sender for TiNo2 temperature / humidity Sensors with Watchdog.
-// Supports Sensors with HTU21D, SHT20, SHT21, SHT25, SHT3C(default on-board chip), SHT30, SHT31, SHT35, BME280, DS18B20
-// built for AVR ATMEGA4808
+// Supports Sensors with HTU21D, SHT20, SHT21, SHT25, SHT3C(default on-board chip), SHT30, SHT31, SHT35, 
+// SHT40, SHT41, SHT43, SHT45, BME280, DS18B20, MAX31865 (PT100 or PT1000), 
+// built for AVR ATMEGA4808 and AVR DD devices
 
 
 // **********************************************************************************
@@ -71,7 +72,7 @@
         possible External Heartbeat using TPL5110
         for each PCINT a individual Gateway ID (multi-channel remote control)
         calibration mode: 't' sends a dummy packet
-        calibration mode: 'to' starts den OOK Modus (send a CW signal)
+        calibration mode: 'to' starts the OOK Modus (send a CW signal)
         calibration mode: 'tt' retrieves the Tepmerature reading from the RFM69 chip
         calibration mode: Offset for RFM69 temperature in configuration
         Receiver can output locally measured sensor data
@@ -94,25 +95,83 @@
 #include "print_things.h"
 #include "pitctrl.h"
 
-#define FILENAME "TiNo2 V2.4  18/11/2023"
+#define FILENAME "TiNo2 sensor.ino 08/02/2024"
 #define BUILD 11
 #define USE_RADIO
 #define RADIO_SPI_PINSWAP 0
 #define SEND_BURST
 //#define BATTERYTEST
-
-PacketHandler *TiNo=NULL;
-
+#define DEBUG 0
 #define P(a) if(Config.SerialEnable) mySerial->a
 
+/*****************************************************************************/
+/***              One-Wire and DS18B20 Temperature Sensors                 ***/
+/*****************************************************************************/
+// using DS18B20 is not recommended, the conversion time takes much longer
+// (700-900 ms) than with I2C based sensors (<50ms).
+// Commenting out the header will remove the entire DS18B20 Module from the Sketch.
+//#include "ds18b20.h"
 
-#define DEBUG 0
+/****************************************************************************/
+/**********                    MAX31865   PT100(0)                 **********/
+/****************************************************************************/
+//#include "tino_max31865.h"
+#define MAX31865_INTERRUPT 1
+
+#if (defined TINO_MAX31865_H && MAX31865_INTERRUPT)
+#define PIN18INTERRUPTFUNC 
+void Pin18InteruptFunc(){}
+#endif
+/****************************************************************************/
+/**********                    MAX31855 k-Type Thermocouple        **********/
+/****************************************************************************/
+// #include "tino_max31855.h"
+
+
+/****************************************************************************/
+/**********                  MAX31856 any-Type Thermocouple        **********/
+/****************************************************************************/
+//#include "tino_max31856.h"
+
+// not recommended for use with small batteries. Use above 3.0V must be ensured!
+// Measurement method: Polling or Interrupt driven.
+// the interrupt driven method requires DRDY of MAX31856 to be connected to Pin 18.
+// the interrupt driven method saves power during the conversion period.
+//#define MAX31856_POLLING
+#define MAX31856_INTERRUPT
+
+#if (defined TINO_MAX31856_H && defined MAX31856_INTERRUPT)
+#ifndef PIN18INTERRUPTFUNC
+void Pin18InteruptFunc(){}
+#endif
+#endif
+
+/****************************************************************************/
+/**********                    MAX6675 k-Type Thermocouple         **********/
+/****************************************************************************/
+//#include "tino_max6675.h"
+
+// obsolete Chip. Use MAX31855 instead
+
+/****************************************************************************/
+/**********                    ADS1120 ADC                         **********/
+/****************************************************************************/
+#include "tino_ads1120.h"
+#define ADS1120_DOSLEEP 1  // 1= use sleep method, 0 = use polling method
+
+/****************************************************************************/
+/**********                    TiNo Packet Manager                 **********/
+/****************************************************************************/
+PacketHandler *TiNo=NULL;
+
+
 /*****************************************************************************/
 /***   Radio Driver Instance                                               ***/
 /*****************************************************************************/
 #include "RFM69.h"
 
 RADIO radio;
+//RADIO radio(SS,15,0, digitalPinToInterrupt(15)); // for TiNo2 development boards, series 0 only
 /*****************************************************************************/
 /***  EEPROM Access  and device calibration / Configuration                ***/
 /*****************************************************************************/
@@ -160,7 +219,7 @@ Calibration CalMode(Config, mySerial, &Mac, BUILD, (uint8_t*) KEY);
 /***                   Sleep mode                                          ***/
 /*****************************************************************************/
 
-uint16_t watchdog_counter;
+uint16_t watchdog_counter=0;
 //bool watchdog_expired = false;
 
 // interrupt service routine for RTC periodic timer
@@ -209,40 +268,6 @@ SHTSensor *SHT3X=NULL;
 SHTSensor *SHTC3=NULL;
 SHTSensor *SHT4X=NULL;
 
-static bool SHT4X_Init(UseBits &enable)
-{
-    if (enable.SHT4X)
-    {
-        enable.SHT4X = SHT_Init(enable.SHT4X, SHT4X, SHTSensor::SHT4X); // just an example how to use the general SHT initialization
-        print_init_result(enable.SHT4X, "SHT4X");
-    }
-    return enable.SHT4X;
-}
-
-static bool SHTC3_Init(UseBits &enable)
-{
-    if (enable.SHTC3)
-    {
-        enable.SHTC3 = SHT_Init(enable.SHTC3, SHTC3, SHTSensor::SHTC3);
-        print_init_result(enable.SHTC3, "SHTC3");
-    }
-    return enable.SHTC3;
-}
-
-static bool SHT3X_Init(UseBits &enable)
-{
-    if (enable.SHT3X)
-    {
-        enable.SHT3X = SHT_Init(enable.SHT3X, SHT3X, SHTSensor::SHT3X);
-        print_init_result(enable.SHT3X, "SHT3X");
-    }
-   return enable.SHT3X;
-}
-
-
-
-
-
 /*****************************************************************************/
 /***              HTU21D  Humidity Sensor                                  ***/
 /*****************************************************************************/
@@ -290,13 +315,7 @@ uint8_t HTU21D_Measure(uint8_t enabled, HTU21D *htu21d, HumiditySensor &Data)
 }
 
 
-/*****************************************************************************/
-/***              One-Wire and DS18B20 Temperature Sensors                 ***/
-/*****************************************************************************/
-// using DS18B20 is not recommended, the conversion time takes much longer
-// (700-900 ms) than with I2C base sensors (<50ms).
-// Commenting out the header will remove the entire DS18B20 Module from the Sketch.
-#include "ds18b20.h"
+
 
 /*****************************************************************************/
 /***              BME280 air pressure and humidity Sensor                  ***/
@@ -362,7 +381,7 @@ static void Reset_SPI(uint8_t swap, uint8_t mode = SPI_MODE0)
     }
 
     SPI.begin();
-    if (mode != SPI_MODE0) SPI.setDataMode(mode);
+    SPI.setDataMode(mode);
 }
 
 static void SPI_MISO_Enable(uint8_t swap)
@@ -383,91 +402,13 @@ static void SPI_MISO_Disable(uint8_t swap)
     if(swap == 0)
     {
         pinConfigure(PIN_PA5, PIN_DIR_INPUT, PIN_PULLUP_ON, PIN_INPUT_DISABLE);
+        //pinConfigure(PIN_PA5, PIN_DIR_INPUT, PIN_PULLUP_OFF, PIN_INPUT_DISABLE);
     }
     else if (swap==1)
     {
         pinMode(PIN_PC1, INPUT_PULLUP);
         disablePinISC(PIN_PC1);
     }
-}
-
-
-/****************************************************************************/
-/**********                    MAX31865                            **********/
-/****************************************************************************/
-#include "MAX31865.h"
-
-#define PT100
-#define MAX31865_SPI_PINSWAP 0
-
-#define FAULT_HIGH_THRESHOLD  0x9304  /* +350C */
-#define FAULT_LOW_THRESHOLD   0x2690  /* -100C */
-
-MAX31865_RTD *rtd=NULL;
-
-
-static void MAX31865_Init(UseBits &enable)
-{
-    if (enable.MAX31865)
-    {
-        pinMode(Config.RTDCSPin, INPUT_PULLUP);  // SPI SS
-
-        SPI_MISO_Enable(MAX31865_SPI_PINSWAP);
-        P(println("start MAX31865"));
-
-        #ifdef PT1000
-        // For PT 1000 (Ref on breakout board = 3900 Ohms 0.1%)
-        rtd= new MAX31865_RTD( MAX31865_RTD::RTD_PT1000, Config.RTDCSPin, 3900 );
-        #endif
-
-        #ifdef PT100
-        // For PT 100  (Ref on breakout board = 430 Ohms 0.1%)
-        rtd= new MAX31865_RTD( MAX31865_RTD::RTD_PT100, Config.RTDCSPin, 430 );
-        #endif
-    }
-}
-
-static uint8_t MAX31865_Measure(bool enable, float* pt100_temp)
-{
-    uint8_t status = 0xFF;
-    if(enable && rtd)
-    {
-        SPI_MISO_Enable(MAX31865_SPI_PINSWAP);
-        Reset_SPI(MAX31865_SPI_PINSWAP, SPI_MODE1);
-        pinMode(Config.RTDPowerPin,OUTPUT);
-        digitalWrite(Config.RTDPowerPin, 1);
-        delay(10);
-
-        rtd->configure( VBIAS_ENABLED, CONVERSION_MODE_OFF, ONESHOT_DISABLED, USE_4WIRES, MAX31865_FAULT_DETECTION_NONE, true, true, FAULT_LOW_THRESHOLD, FAULT_HIGH_THRESHOLD );
-        //Fault detection cycle.
-        rtd->configure( VBIAS_ENABLED, CONVERSION_MODE_OFF, ONESHOT_DISABLED, MAX31865_FAULT_DETECTION_MANUAL_1 ); //0x8
-        delay(60);
-        rtd->configure( VBIAS_ENABLED, CONVERSION_MODE_OFF, ONESHOT_DISABLED, MAX31865_FAULT_DETECTION_MANUAL_2 );
-
-        status = rtd->fault_status();
-        if (status==0 )
-        {
-            //Serial.println(F("Starting conversion..."));Serial.flush();
-
-            // Start 1 shot measure
-            // V_BIAS enabled , No Auto-conversion, 1-shot enabled, No Fault detection
-            rtd->configure( VBIAS_ENABLED, CONVERSION_MODE_OFF, ONESHOT_ENABLED, MAX31865_FAULT_DETECTION_NONE );
-            delay(70);
-            status = rtd->read_all();
-            *pt100_temp = rtd->temperature();
-
-            mySerial->print(F( "RTD:")); mySerial->print(rtd->resistance());
-            mySerial->print(F( " Ohm, Temp: "));
-            mySerial->print( *pt100_temp,2); mySerial->println("º");
-        }
-        else
-        {
-            mySerial->println("MAX31865 Failure.");
-        }
-
-        digitalWrite(Config.RTDPowerPin, 0);
-      }
-    return status;
 }
 
 
@@ -558,7 +499,7 @@ void setup() {
     /***                    ***/
     /*** disable all GPIO's ***/
     /***                    ***/
-    for (uint8_t i = 0; i < 26; i++)
+    for (uint8_t i = 6; i < 26; i++)
     {
         pinMode(i, INPUT_PULLUP);
         disablePinISC(i);
@@ -619,11 +560,6 @@ void setup() {
 // #define OUTPUT         1
 // #define INPUT_PULLUP   2
 
-// in this sketch we need:
-// FALLING -> 0
-// RISING -> 1
-// CHANGE -> CHANGE
-
 // only Pins Px2 and Px6 are fully asynchronuous, these are pins 10,14,18,22 (PC2, PD2, PD6, PF2)
 
     if (Config.PCI0Pin >=0)
@@ -641,17 +577,17 @@ void setup() {
         register_pci(1, Config.PCI1Pin, wakeUp1, Config.PCI1Trigger);
     }
 
-  if (Config.PCI2Pin >=0)
-  {
-      pinMode(Config.PCI2Pin, Config.PCI2Mode);
-      register_pci(2, Config.PCI2Pin, wakeUp2, Config.PCI2Trigger);
-  }
+    if (Config.PCI2Pin >=0)
+    {
+        pinMode(Config.PCI2Pin, Config.PCI2Mode);
+        register_pci(2, Config.PCI2Pin, wakeUp2, Config.PCI2Trigger);
+    }
 
-  if (Config.PCI3Pin >=0)
-  {
-      pinMode(Config.PCI3Pin, Config.PCI3Mode);
-      register_pci(3, Config.PCI3Pin, wakeUp3, Config.PCI3Trigger);
-  }
+    if (Config.PCI3Pin >=0)
+    {
+        pinMode(Config.PCI3Pin, Config.PCI3Mode);
+        register_pci(3, Config.PCI3Pin, wakeUp3, Config.PCI3Trigger);
+    }
     // initialize PIR Sensor, if configured
     // it will be still for 3 cycles.
     // PIR shares the event flag with PCI1. PCI1 remains active, if specified.
@@ -678,9 +614,24 @@ void setup() {
 
     Wire.swap(0); // 0 is default, 1 is identical with 0, 3 has the same pins as UART0
     Wire.begin();
-    SHTC3_Init   (*sensors);
-    SHT3X_Init   (*sensors);
-    SHT4X_Init   (*sensors);
+    if (sensors->SHTC3)
+    {
+        sensors->SHTC3 = SHT_Init(sensors->SHTC3, SHTC3, SHTSensor::SHTC3);
+        print_init_result(sensors->SHTC3, "SHTC3");
+    }
+
+    if (sensors->SHT3X)
+    {
+        sensors->SHT3X = SHT_Init(sensors->SHT3X, SHT3X, SHTSensor::SHT3X);
+        print_init_result(sensors->SHT3X, "SHT3X");
+    }
+
+    if (sensors->SHT4X)
+    {
+        sensors->SHT4X = SHT_Init(sensors->SHT4X, SHT4X, SHTSensor::SHT4X);
+        print_init_result(sensors->SHT4X, "SHT4X");
+    }
+
     HTU21D_Init  (*sensors);
     BME280_Init  (*sensors);
 
@@ -698,13 +649,63 @@ void setup() {
         if (num_ds18b20==0) TiNo->use.DS18B20=0;
         mySerial->print("DS18B20 found: "); mySerial->println(num_ds18b20);
     }
-    #else
-        #warning no Dallas18b20 Module included in this build
+    //#warning no Dallas18b20 Module included in this build
     #endif
 
-    MAX31865_Init(TiNo->use);
+    #ifdef TINO_MAX31865_H
+    #if MAX31865_INTERRUPT
+    attachInterrupt(18, Pin18InteruptFunc, FALLING); // define interrupt on Pin 18, fullt asynchronuous Pin (4808 only)
+    #endif
+    RTD_Init(TiNo->use.MAX31865, Config.RTDPowerPin, Config.RTDCSPin);
+    mySerial->println("RTD (PT100) device MAX31865 initialized.");
+    #if DEBUG > 0
+    #warning MAX31865 (RTD) Module included in this build
+    #endif
+    #endif
+
+
+    #ifdef TINO_MAX31855_H
+    ThermoCouple_Init_55(TiNo->use.MAX31865, Config.RTDPowerPin, Config.RTDCSPin);
+    mySerial->println("Thermocouple device MAX31855 initialized.");
+    #if DEBUG > 0
+    #warning MAX31855K (K type Thermocouple) Module included in this build
+    #endif
+    #endif
+
+    #ifdef TINO_MAX31856_H
+    #ifdef MAX31856_INTERRUPT
+    attachInterrupt(18, Pin18InteruptFunc, FALLING); // define interrupt on Pin 18, fullt asynchronuous Pin (4808 only)
+    #endif
+    ThermoCouple_Init_56(TiNo->use.MAX31865, Config.RTDPowerPin, Config.RTDCSPin);
+    mySerial->println("Thermocouple device MAX31856 initialized.");
+    #if DEBUG > 0
+    #warning MAX31856 (Thermocouple) Module included in this build
+    #endif
+    #endif
+
+    #ifdef TINO_MAX6675_H
+    ThermoCouple_Init_6675(TiNo->use.MAX31865, Config.RTDPowerPin, Config.RTDCSPin);
+    mySerial->println("Thermocouple device MAX6675 initialized.");
+    #if DEBUG > 0
+    #warning MAX6675 (K type Thermocouple) Module included in this build
+    #endif
+    #endif
+    
+    #ifdef TINO_ADS1120_H
+    ThermoCouple_Init_ADS1120(TiNo->use.MAX31865, 18, Config.RTDCSPin, ADS1120_DOSLEEP); // define interrupt on Pin 18, fully asynchronuous Pin
+    if (TiNo->use.MAX31865)
+        mySerial->println("Thermocouple device ADS1120 initialized.");
+    #endif
 
     I2C_shutdown(Config.I2CPowerPin);
+
+    //mySerial->print("PORTMUX.TWISPIROUTEA = "); mySerial->println(PORTMUX.TWISPIROUTEA);
+
+    //mySerial->print("LDR enabled in Eeprom: "); mySerial->println(TiNo->use.BRIGHTNESS);
+    //mySerial->print("LDR Pin in EEprom    : ");  mySerial->println((int8_t)Config.LdrPin);
+    //mySerial->print("IS_MVIO_ENABLED      : ");
+    //IS_MVIO_ENABLED() ? mySerial->println("yes") : mySerial->println("no");
+    //mySerial->print("FUSE.SYSCFG1         : 0x"); mySerial->println(FUSE.SYSCFG1, HEX);
 
     // Initialize LDR, if enabled
     if (TiNo->use.BRIGHTNESS)
@@ -728,11 +729,14 @@ void setup() {
     set_sleep_mode(SLEEP_MODE_PWR_DOWN);      // set sleep mode
     sleep_enable();    // enable sleep control
 
+    /*** test of internal temperature sensor
+         results are unsatisfying :( despite factory calibration
+    ***/
     #if DEBUG > 0
     #if defined (MEGACOREX)
     int8_t sigrow_offset = SIGROW.TEMPSENSE1; // Read signed value from signature row
     uint8_t sigrow_slope = SIGROW.TEMPSENSE0; // Read unsigned value from signature row
-    #elif defined (ARDUINO_avrdd)
+    #elif defined (ARDUINO_avrdd) || defined (ARDUINO_avrda)
     uint16_t sigrow_offset = (SIGROW_TEMPSENSE1H << 8) | SIGROW_TEMPSENSE1L;// Read signed value from signature row
     uint16_t sigrow_slope  = (SIGROW_TEMPSENSE0H << 8) | SIGROW_TEMPSENSE0L;
     #endif
@@ -747,9 +751,9 @@ void setup() {
     #endif
     Mac.radio_begin(); // puts radio to sleep to save power.
 
+    // for debug: this makes sure we can read from the radio.
     #if DEBUG > 0
     mySerial->println ("Radio running.");
-    // for debug: this makes sure we can read from the radio.
     byte version_raw = radio.readReg(0x10);
     mySerial->print ("Radio chip ver: "); mySerial->print(version_raw>>4, HEX); mySerial->print (" Radio Metal Mask ver: "); mySerial->print(version_raw&0xf, HEX); mySerial->println();
     #endif
@@ -873,16 +877,107 @@ float Measure(void)
         t_internal = SensorData.temperature;
     }
 
+    #ifdef TINO_MAX31865_H
     // PT100 Measurement
     if(TiNo->use.MAX31865)
     {
-        uint8_t status = MAX31865_Measure(TiNo->use.MAX31865, &temperature);
+        //uint8_t status = MAX31865_Measure(TiNo->use.MAX31865, &temperature);
+        uint8_t status = RTD_Measure(TiNo->use.MAX31865, &temperature, MAX31865_INTERRUPT);
         if (status==0)
         {
+            mySerial->print(F( "RTD Temp: "));
+            mySerial->print(temperature,2); mySerial->println("º");
             success |= MAX31865_bm;
             TiNo->add_temp(encode_temp(temperature));
         }
     }
+    #endif
+
+
+    #ifdef TINO_MAX31855_H
+    if(TiNo->use.MAX31865)
+    {
+        float t[2];
+        t[0] = t[1] = 0;
+        uint8_t status  = Thermocouple_Measure_55(1, t);
+        Serial.print("TC stat: ");
+        Serial.print(status);
+
+        Serial.print(", CJ_TEMP: ");
+        Serial.print(t[COLD_JUNCTION_TEMPERATURE], 3);
+        Serial.print(",TC_TEMP: ");
+        Serial.println(t[THERMOCOUPLE_TEMPERATURE], 3);
+
+        if (status==0)
+        {
+            success |= MAX31865_bm;
+            TiNo->add_temp(encode_temp(t[THERMOCOUPLE_TEMPERATURE]));
+        }
+    }
+    #endif
+
+    #ifdef TINO_MAX31856_H
+    if(TiNo->use.MAX31865)
+    {
+        float t[2];
+        t[0] = t[1] = 0;
+        pinMode(MISO, INPUT); // special for this device. It has internal pull-up to VCC
+
+        /***  Measurement by polling ***/
+        #ifdef MAX31856_POLLING
+        uint8_t status  = ThermoCouple_Measure_56(1, t); // polling on bit 6 (1SHOT) in CR0 register
+        #endif
+
+        /***   Measurement interrupt driven (current saving 0.4mAs @ 4MHz) ***/
+        #ifdef MAX31856_INTERRUPT
+        ThermoCouple_Convert_56(1);
+        sleep_cpu();
+        uint8_t status = ThermoCouple_GetTemperatures(1, t);
+        #endif
+
+        Serial.print("TC stat: ");
+        Serial.print(status);
+        Serial.print(", CJ_Temp: "); Serial.print(t[COLD_JUNCTION_TEMPERATURE], 3);
+        Serial.print(", TC_temp: ");  Serial.println(t[THERMOCOUPLE_TEMPERATURE], 3);
+        if (status==0)
+        {
+            success |= MAX31865_bm;
+            TiNo->add_temp(encode_temp(t[THERMOCOUPLE_TEMPERATURE]));
+        }
+    }
+    #endif
+
+    #ifdef TINO_MAX6675_H
+    if(TiNo->use.MAX31865)
+    {
+        float t=0;
+        uint8_t status  = Thermocouple_Measure_6675(1, &t);
+
+        Serial.print("TC stat: ");
+        Serial.print(status);
+        Serial.print(", TC_temp: ");  Serial.println(t, 3);
+        if (status==0)
+        {
+            success |= MAX31865_bm;
+            TiNo->add_temp(encode_temp(t));
+        }
+    }
+    #endif
+
+    #ifdef TINO_ADS1120_H
+    if(TiNo->use.MAX31865)
+    {
+        float t[2];
+        t[0] = t[1] =0;
+        Thermocouple_Measure_ADS1120(TiNo->use.MAX31865, t);
+        Serial.print("CJ_TEMP: ");
+        Serial.print(t[COLD_JUNCTION_TEMPERATURE], 3);
+        Serial.print(",TC_TEMP: ");
+        Serial.println(t[THERMOCOUPLE_TEMPERATURE], 3);
+        success |= MAX31865_bm;
+        TiNo->add_temp(encode_temp(t[THERMOCOUPLE_TEMPERATURE]));
+    }
+    #endif
 
     #ifdef DS18B20_H
     // Dallas DS18B20 Measurement
@@ -978,6 +1073,7 @@ void loop()
     TiNo->increment_count();
 
     // carry out measurements according to configuration
+    SPI_MISO_Enable(RADIO_SPI_PINSWAP);
     temperature = Measure();
 
 
@@ -1016,7 +1112,10 @@ void loop()
             #if DEBUG >0
             mySerial->println("RFM send burst");
             #endif
+        //SPI.end();
         Reset_SPI(RADIO_SPI_PINSWAP);
+        digitalWrite(Config.RTDPowerPin, 1);
+
         if(Config.UseRadioFrequencyCompensation)
         {
             ackreceived = Mac.radio_send(TiNo->pData, TiNo->PacketLen, Config.RequestAck, (int)temperature);
@@ -1025,7 +1124,9 @@ void loop()
         {
             ackreceived = Mac.radio_send(TiNo->pData, TiNo->PacketLen, Config.RequestAck);
         }
-
+            #if DEBUG >0
+            mySerial->println("RFM burst sent.");
+            #endif
         if (Config.RequestAck && Config.SerialEnable)
             (ackreceived) ? mySerial->println("Ack received.") : mySerial->println(" No Ack received.");
 
@@ -1039,17 +1140,58 @@ void loop()
 
     #endif
 
+    #ifdef TINO_MAX31865_H
+    RTD_Sleep(TiNo->use.MAX31865);
+    #endif
+
+    #ifdef TINO_MAX31855_H
+    /** Power needs to be attached as long as we need to use SPI  **/
+    /** so only here we can turn power of the mAX31855 off  **/
+    Thermocouple_Sleep_55(TiNo->use.MAX31865);
+    #endif
+
+    #ifdef TINO_MAX31856_H
+    ThermoCouple_Sleep_56(TiNo->use.MAX31865);
+    #endif
+
+    #ifdef TINO_MAX6675_H
+    Thermocouple_Sleep_6675(TiNo->use.MAX31865);
+    #endif
+
     // flush serial TX buffer, preparing sleep
     mySerial->flush();
 
 
-    // blink
+    /** blink
+       Config.LedCount == 0 : never blink
+       Config.LedCount == 255: always blink
+       Config.LedCount = x blink x rounds (typical x=3 is good for testing)
+    **/
     if (Config.LedPin && Config.LedCount >0)
     {
         if (Config.LedCount != 0xff) Config.LedCount--;
         blink(Config.LedPin,2); // blink LED
     }
 
-    if (MAX31865_SPI_PINSWAP != RADIO_SPI_PINSWAP)
-            SPI_MISO_Disable(MAX31865_SPI_PINSWAP);
+    //if (MAX31865_SPI_PINSWAP != RADIO_SPI_PINSWAP)
+    //        SPI_MISO_Disable(MAX31865_SPI_PINSWAP);
+    SPI_MISO_Disable(RADIO_SPI_PINSWAP);
+
+    #ifdef TINO_MAX31865_H
+    pinMode(MISO, INPUT);
+    #endif
+
+    #ifdef TINO_MAX31855_H
+    //pinMode(Config.RTDCSPin, INPUT);
+    pinMode(MISO, INPUT);
+    #endif
+
+    #ifdef TINO_MAX31856_H
+    pinMode(MISO, INPUT);
+    #endif
+
+    #ifdef TINO_MAX6675_H
+    pinMode(MISO, INPUT);
+    #endif
+
 }
