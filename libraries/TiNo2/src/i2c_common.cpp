@@ -12,13 +12,12 @@ void I2C_shutdown(int8_t PowerPin)
     if (PowerPin >= 0)
     {
         digitalWrite(PowerPin, LOW);
-
-        #if defined (__AVR_ATmega4808__)
+        #if defined (MEGACOREX)
         if ((PORTMUX.TWISPIROUTEA & 0x30) != 0x10) // only default (0) and ALT1 (1) is supported, other values should fall back to default.
         {
             pinMode(PIN_WIRE_SDA,INPUT);
             disablePinISC(PIN_WIRE_SDA);
-
+            
             pinMode(PIN_WIRE_SCL,INPUT);
             disablePinISC(PIN_WIRE_SCL);
         }
@@ -30,8 +29,8 @@ void I2C_shutdown(int8_t PowerPin)
             pinMode(PIN_WIRE_SCL_PINSWAP_1,INPUT);
             disablePinISC(PIN_WIRE_SCL_PINSWAP_1);
         }
-
-        #elif defined ARDUINO_avrdd
+        
+        #elif defined (ARDUINO_avrdd) || defined (ARDUINO_avrda)
         pinMode(SDA_NOW,INPUT);
         disablePinISC(SDA_NOW);
 
@@ -56,7 +55,7 @@ void I2C_pullup(int8_t PowerPin)
         pinMode(PIN_WIRE_SCL_PINSWAP_1,INPUT_PULLUP);
     }
 
-    #elif defined (ARDUINO_avrdd)
+    #elif defined (ARDUINO_avrdd)  || defined (ARDUINO_avrda)
     pinMode(SDA_NOW,INPUT_PULLUP);
     pinMode(SCL_NOW,INPUT_PULLUP);
     #endif

@@ -24,23 +24,41 @@ void print_serial_number(HardwareSerial* S)
     S->print("Serial Number ");
     #if defined (ARDUINO_avrdd)
 
-    #if defined __AVR_AVR64DD32__
-    S->print("AVR64DD32: ");
-    #elif defined __AVR_AVR64DD28__
-    S->print("AVR64DD28: ");
-    #else
-    S->print("AVRxxDDxx: ");
-    #endif
+        #if defined __AVR_AVR64DD32__
+        S->print("AVR64DD32: ");
+        #elif defined __AVR_AVR64DD28__
+        S->print("AVR64DD28: ");
+        #else
+        S->print("AVRxxDDxx: ");
+        #endif
     // AVRxxDDxx have 16 Bytes
     for (i=0;  i<16; i++)
     {
         uint8_t sni = *sernum_addr;
+        S->print("0x");
         S->print(sni,HEX);
         S->print(" ");
         sernum_addr++;
     }
     S->println();
 
+    #elif defined (ARDUINO_avrda)
+        #if defined __AVR_AVR64DA32__
+        S->print("AVR64DA32: ");
+        #elif defined __AVR_AVR64DA28__
+        S->print("AVR64DA28: ");
+        #else
+        S->print("AVRxxDAxx: ");   
+        #endif
+    for (i=0;  i<16; i++)
+    {
+        uint8_t sni = *sernum_addr;
+        S->print(sni);
+        S->print(" ");
+        sernum_addr++;
+    }
+    S->println();
+    
     #else
     #if defined (__AVR_ATmega4808__)
     S->print("ATMEGA4808: ");

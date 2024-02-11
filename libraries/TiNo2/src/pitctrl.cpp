@@ -113,7 +113,7 @@ void PITControl::init(uint8_t ClockGen, uint8_t receiver)
         // enable the oscillator
         temp = CLKCTRL.XOSC32KCTRLA;
         temp |= CLKCTRL_ENABLE_bm | CLKCTRL_RUNSTDBY_bm;
-        #if defined ARDUINO_avrdd
+        #if defined (ARDUINO_avrdd) || defined (ARDUINO_avrda)
         temp |= CLKCTRL_LPMODE_bm;
         #endif
         CPU_CCP = CCP_IOREG_gc;
@@ -126,7 +126,7 @@ void PITControl::init(uint8_t ClockGen, uint8_t receiver)
         // select 32.768 kHz external crystal oscillator
         #if defined (MEGACOREX)
         RTC.CLKSEL = RTC_CLKSEL_TOSC32K_gc;
-        #elif defined (ARDUINO_avrdd)
+        #elif defined (ARDUINO_avrdd)  || defined (ARDUINO_avrda)
         //RTC.CLKSEL = RTC_CLKSEL_XTAL32K_gc; // strange compiler error
         RTC.CLKSEL = 0x02;
         #endif

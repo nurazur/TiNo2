@@ -85,7 +85,7 @@ int analogReadInternalRef(uint8_t mode)
     // Combine two bytes
     return ADC0.RES;
 
-    #elif defined (ARDUINO_avrdd)
+    #elif defined (ARDUINO_avrdd) || defined (ARDUINO_avrda)
     (void) mode;
     // set reference to VDD
     VREF.ADC0REF = VREF_REFSEL_VDD_gc;
@@ -124,7 +124,7 @@ long readVcc()
 {
     #if defined (__AVR_ATmega4808__)
         return (long) analogReadInternalRef(INTERNAL1V5) / (1<<SAMPLE_ACCUMULATION); // value is divided by 32
-    #elif defined (ARDUINO_avrdd)
+    #elif defined (ARDUINO_avrdd) || defined (ARDUINO_avrda)
        return (long) analogReadInternalRef(VREF_REFSEL_1V024_gc); // raw value, not divided by 32,
     #endif
 }
@@ -186,7 +186,7 @@ float readMcuTemperaure(void)
     //#endif
     return temp;
 
-#elif defined (ARDUINO_avrdd)
+#elif defined (ARDUINO_avrdd) || defined (ARDUINO_avrda)
     uint16_t temp_raw=0;
     uint32_t temp_l=0;
     float temp;
@@ -290,7 +290,7 @@ uint8_t LDR_Measure(bool enabled, int8_t LDRPin, uint16_t& brightness)
         //ADC0.CTRLA &= ~ADC_ENABLE_bm; // disable ADC
         success++;
     }
-#elif defined (ARDUINO_avrdd)
+#elif defined (ARDUINO_avrdd) || defined (ARDUINO_avrda)
     // the pins available on DD devices and TiNo2 are:
     // 8-11 if MVIO disabled, 13-18, 22-24 (DD32 devices only)
     if (enabled && LDRPin >= 2)

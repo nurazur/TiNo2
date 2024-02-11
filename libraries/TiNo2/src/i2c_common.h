@@ -12,7 +12,6 @@ typedef struct {
 HumiditySensor;
 
 
-__attribute__((weak)) void I2C_shutdown(int8_t PowerPin);
-__attribute__((weak)) void I2C_pullup  (int8_t PowerPin);
-
+void I2C_shutdown(int8_t PowerPin);
+void I2C_pullup  (int8_t PowerPin);
 #endif

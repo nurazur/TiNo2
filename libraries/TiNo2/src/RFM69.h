@@ -59,7 +59,7 @@
 #elif defined(__AVR_ATmega3208__) || defined(__AVR_ATmega4808__)
   #define RF69_IRQ_PIN          14 // was 15 on V1 Boards!
   #define RF69_IRQ_NUM          digitalPinToInterrupt(RF69_IRQ_PIN)
-#elif defined (ARDUINO_avrdd) || defined (__AVR_AVR64DD32__)
+#elif defined (ARDUINO_avrdd) || defined (ARDUINO_avrda)
   #define RF69_IRQ_PIN          14
   #define RF69_IRQ_NUM          digitalPinToInterrupt(RF69_IRQ_PIN)
 #endif
