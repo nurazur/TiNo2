@@ -44,6 +44,7 @@ PCBs fit into low cost PVC boxes with the size of a matchbox that are readily av
 - BME280 (air pressure sensor)
 - DS18B20 (ubiquitous temperature sensor)
 - MAX31865 (PT100 temperature Sensor)
+- ![](https://github.com/nurazur/TiNo2/blob/e5b521a594be324584e5fc79e4e9750f60dd1295/New_smaller.png) MAX6675, MAX31855, MAX31856, ADS1120 Thermocouple Sensors
 - AM312 (PIR movement sensor)
 - I2C and SPI Bus based sensors can easily be integrated
 - brightness using a LDR
