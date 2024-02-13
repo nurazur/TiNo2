@@ -44,7 +44,7 @@ PCBs fit into low cost PVC boxes with the size of a matchbox that are readily av
 - BME280 (air pressure sensor)
 - DS18B20 (ubiquitous temperature sensor)
 - MAX31865 (PT100 temperature Sensor)
-- ![](https://github.com/nurazur/TiNo2/blob/e5b521a594be324584e5fc79e4e9750f60dd1295/New_smaller.png) MAX6675, MAX31855, MAX31856, ADS1120 Thermocouple Sensors
+- ![](https://github.com/nurazur/TiNo2/blob/e5b521a594be324584e5fc79e4e9750f60dd1295/New_smaller.png) MAX6675, MAX31855K, MAX31856, ADS1120 K-TypeThermocouple Sensors
 - AM312 (PIR movement sensor)
 - I2C and SPI Bus based sensors can easily be integrated
 - brightness using a LDR
@@ -52,7 +52,7 @@ PCBs fit into low cost PVC boxes with the size of a matchbox that are readily av
 - enough analog GPIO's
 
 ## Radio
-- RFM69HCW, RFM95 Module
+- RFM69HCW FSK/OOK Module, RFM95 LoRa Module
 - bidirectional communication
 - ISM Band (Europe: 433MHz / 868MHz, US:315MHz / 915Mhz)
 - 2GFSK Modulation
@@ -68,18 +68,22 @@ PCBs fit into low cost PVC boxes with the size of a matchbox that are readily av
 
 ## Baseband
 - Atmel (Microchip) ATMega4808
-- 48kByte Flash
+-  ![](https://github.com/nurazur/TiNo2/blob/e5b521a594be324584e5fc79e4e9750f60dd1295/New_smaller.png)supports Micrpchip AVR64DD28 and AVR64DD28 MCU's
+- 48kByte Flash (64kByte Flash on AVR64DD)
 - sleep current < 2µA
 - 1 MHz clock allows operating voltage down to 1.8V
 - 16 MHz clock for gateway receiver
 - I2C bus
+- SPI
+- Serial Port (programming and configuration Port)
 - min 12 additional GPIO
 - CPU can be locked to avoid reading the flash code
 
 ## System / Software
 - Open Source Software C++
 - Software can easily be adopted individually
-- Programming tool is Arduino IDE
+- supports Arduino IDE
+- ![](https://github.com/nurazur/TiNo2/blob/e5b521a594be324584e5fc79e4e9750f60dd1295/New_smaller.png)supports PLatformIO
 - Configuration of Nodes via serial interface (FTDI Adapter)
 - configuration data and calibration data reside in EEPROM
 - EEPROM encrypted
