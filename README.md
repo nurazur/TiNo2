@@ -134,7 +134,8 @@ Open Arduino IDE and a new category in the boards menu called "MegaCoreX" will s
   `<User>.platformio\penv\Scripts`<br>
   `<User>.platformio\penv\Lib\site-packages`<br>
 
-  where "User" is the path to the PLatformIO installation folder.
+  where "User" is the path to the PLatformIO installation folder.<br>
+  
   3. Download the TiNo2 Repository as zip file. Copy the folders `libraries`, `sensor` and `receiver` to a project folder of your choice.
   4. When using VS Code with PlatformIO IDE, open a new project and navigate to the `sensor` or `receiver` folder. Proceed with PlatformIO IDE from there.
   5. When using the PlatformIO CLI from the command line, proceed as follows:<br>
