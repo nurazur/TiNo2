@@ -92,7 +92,7 @@ PCBs fit into low cost PVC boxes with the size of a matchbox that are readily av
   - serial with SerialUPDI Adapter and Bootloader
 - up to 4 external interrupts (i.e. push buttons) can be configured
 
-# How To Install
+# How To Install with Arduino IDE
 1. Install MegaCoreX
 2. Install TiNo2 libraries
 
