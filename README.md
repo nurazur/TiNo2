@@ -128,4 +128,24 @@ Open Arduino IDE and a new category in the boards menu called "MegaCoreX" will s
 * Click **Install**.
 * After installation is complete, close the **Boards Manager** window.
 
-#Burning a Bootloader
+# How To Install with PlatformIO
+  1. Install PlatformIO IDE with Visual Studio Code or install Platform IO CLI only.
+  2. On Windows: add the following two paths to the `path` variable of the environment variables:<br>
+  `<User>.platformio\penv\Scripts`<br>
+  `<User>.platformio\penv\Lib\site-packages`<br>
+
+  where "User" is the path to the PLatformIO installation folder.
+  3. Download the TiNo2 Repository as zip file. Copy the folders `libraries`, `sensor` and `receiver` to a project folder of your choice.
+  4. When using VS Code with PlatformIO IDE, open a new project and navigate to the `sensor` or `receiver` folder. Proceed with PlatformIO IDE from there.
+  5. When using the PlatformIO CLI from the command line, proceed as follows:<br>
+    a. open a console (on Windows: cmd.exe)<br>
+    b. navigate to the `sensor` or `receiver` folder of the TiNo2 project by using the `cd <path>` command.<br>
+    c. to compile, run the command `pio run`.<br>
+    d. to upload a sketch to the target device, run `pio run -t upload`.
+    <br>In case you need to use a port different from the default one, add the option `-upload-port <port>` to the command line.<br>
+    e. please refer to the PLatformIO documentation how to customize the `platformio.ini` project configuration file.
+
+## Fuses
+run the command `pio run -e fuses_bootloader -t fuses` from the console. In VS Code I don't know how to invoke this.
+## Burning a Bootloader
+This does not work with platformio at the moment. There is a bug in the platformio manager scripts. Therefore I recommend you to flash a bootloader using Arduino IDE, or, in case you know exactly what you do, use *avrdude*.
