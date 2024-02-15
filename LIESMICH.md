@@ -1,7 +1,7 @@
 # TiNo
 ![](https://github.com/nurazur/TiNo2/blob/master/Tino2_logo.png)
 
-## Hinweis aus aktuellem Anlass
+## Hinweis
 Der Master-Branch ist als Entwicklungsbranch gedacht, die Verwendung, auch einzelner Dateien, ist auf eigenes Risiko. Die Releases sind jedoch gründlich getetstet. Doch auch hier gilt: ich übernehme keine Garantie dass die Software frei von Fehlern ist.
 
 # Einführung
@@ -23,12 +23,6 @@ Anwesenheitssensoren, Magnetschalter, Erschütterungs-Sensoren, Feuchtigkeitsmes
 Die Leiterplatten passen zu im Handel erhältlichen PVC Gehäusen, welche in etwa die Grösse einer Streichholzschachtel haben. Die verwendeten Komponenten sind am Markt eingeführt, jederzeit erhältlich und
 dadurch kostengünstig zu beschaffen.
 
-# Warum TiNo?
-- kompakte Bauform (Streichholzschachtel).
-- Leiterplatten speziell fuer das Gehaeuse.
-- Schaltung konsequent auf mimimalem Stromverbrauch optimiert. Batterielaufzeit 5 Jahre oder mehr.
-- Konzept der minimalen Kosten. Keine teuren Features die kaum einer braucht.
-- Bidirektionale sichere Funkverbindung.
 
 # Features
 ## Allgemein
@@ -40,14 +34,19 @@ dadurch kostengünstig zu beschaffen.
 - HTU21D
 - SHT21, SHT20, SHT25
 - SHT30, SHT31, SHT35
+- SHTC3
 - SHT40, SHT41, SHT43, SHT45
 - BME280 Luftdruck Sensor
+- DS18B20 (beliebter Temperatursensor)
+- MAX31865 (PT100 Temperatur Sensor)
 - AM312 PIR Bewegungssensor
 - MAX31865 PT100 Temperatur Sensor
+- [](https://github.com/nurazur/TiNo2/blob/e5b521a594be324584e5fc79e4e9750f60dd1295/New_smaller.png) MAX6675, MAX31855K, MAX31856, ADS1120 ADC IC's für Thermoelemente
 - LDR als Helligkeitssensor
-- I2C Bus basierte Sensoren leicht konfigurierbar
-- 4 digitale GPIOs
-- 2/4 analoge GPIO's (abhängig von der Board Version)
+- I2C oder SPI basierte Sensoren leicht konfigurierbar
+- genug digitale GPIOs
+- genug analoge GPIOs
+
 
 ## Radio
 - RFM69HCW Modul oder RFM95 (LoRa) Modul
@@ -65,14 +64,16 @@ dadurch kostengünstig zu beschaffen.
 - Interleaver
 
 ## Basisband
-- Atmel (Microchip) ATMega4808-au (48k Flash)
+- Microchip ATMega4808-au
+- ![](https://github.com/nurazur/TiNo2/blob/e5b521a594be324584e5fc79e4e9750f60dd1295/New_smaller.png) auch für Micrpchip AVR64DD28 and AVR64DD28 MCU's
+- 48kByte Flash (64kByte Flash on AVR64DD)
 - Ruhestrom < 2uA
 - Ruhestrom ca. 1uA mit TPL5110 (extern)
 - 1 MHz oder 4 MHz Takt Sender erlaubt Betriebsspannung bis 1.8V
 - 16 MHz Takt Empfänger
-- I2C für Sensoren
-- mindestens 4 weitere GPIO
-
+- I2C oder SPI für Sensoren
+- 11 weitere GPIO's
+- Serielles Interface zum Programmieren und Konfigurieren
 
 ## System / Software
 - Open Source Software C++
@@ -91,7 +92,7 @@ dadurch kostengünstig zu beschaffen.
 1. Installiere MegaCoreX
 2. Installiere TiNo2 Bibliotheken
 
-## Installation von MegaCoreX ueber Boards Manager
+## Installation von MegaCoreX über Boards Manager
 * Arduino IDE starten.
 * `File->Preferences` öffnen.
 * Unter `Additional Boards Manager URL's` diesen Link eintragen:
