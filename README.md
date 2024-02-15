@@ -95,6 +95,7 @@ PCBs fit into low cost PVC boxes with the size of a matchbox that are readily av
 # How To Install with Arduino IDE
 1. Install MegaCoreX
 2. Install TiNo2 libraries
+3. Install Senor libraries
 
 ## Installation of  MegaCoreX via Boards Manager
 * Open Arduino IDE.
@@ -128,6 +129,20 @@ Open Arduino IDE and a new category in the boards menu called "MegaCoreX" will s
 * Click **Install**.
 * After installation is complete, close the **Boards Manager** window.
 
+## Install Sensor libraries
+Copy the following zip files into the `libraries` folder of your Arduino sketchbook.
+<br>
+[BME280](https://github.com/nurazur/BME280/archive/refs/heads/master.zip)<br>
+[SHTxx](https://github.com/Sensirion/arduino-sht/archive/refs/tags/v1.2.4.zip)<br>
+[OneWire](https://github.com/nurazur/OneWire/archive/refs/heads/master.zip)<br>
+[DallasTemperature](https://github.com/milesburton/Arduino-Temperature-Control-Library/archive/refs/tags/3.9.1.zip)<br>
+In case you want to use a Thermocouple, you need to install <u>ALL</u> of the following libraies too: <br>
+[ADS1120](https://github.com/nurazur/ADS1120-Library/archive/refs/heads/master.zip)<br>
+[MAX6675](https://github.com/RobTillaart/MAX6675/archive/refs/tags/0.3.0.zip)<br>
+[MAX31855](https://github.com/RobTillaart/MAX31855_RT/archive/refs/tags/0.6.0.zip)<br>
+
+Then install the libraries by using the Arduino IDE:<br>
+`sketch -> Include Library -> Add .Zip library`
 # How To Install with PlatformIO
   1. Install PlatformIO IDE with Visual Studio Code or install Platform IO CLI only.
   2. On Windows: add the following two paths to the `path` variable of the environment variables:<br>
@@ -141,7 +156,9 @@ Open Arduino IDE and a new category in the boards menu called "MegaCoreX" will s
   5. When using the PlatformIO CLI from the command line, proceed as follows:<br>
     a. open a console (on Windows: cmd.exe)<br>
     b. navigate to the `sensor` or `receiver` folder of the TiNo2 project by using the `cd <path>` command.<br>
-    c. to compile, run the command `pio run`.<br>
+    c. to compile, run the command `pio run`.
+        The `atmelmegaavr` core library will be installed if not yet available.
+        All project related libraries are downloaded and installed automatically. This is one of the big advantages over the Arduino IDE.
     d. to upload a sketch to the target device, run `pio run -t upload`.
     <br>In case you need to use a port different from the default one, add the option `-upload-port <port>` to the command line.<br>
     e. please refer to the PLatformIO documentation how to customize the `platformio.ini` project configuration file.
