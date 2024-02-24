@@ -34,15 +34,12 @@
 //
 // Based originally on work from Nathan Chantrell
 // modified by meigrafd @2013 - for UART on RaspberryPI
-// extended by nurazur nurazur@gmail.com 2014 - 2023
+// extended by nurazur nurazur@gmail.com 2014 - 2024
 // the RF protocol is completely binary, see https://github.com/nurazur/tino
 
 #define DEBUG 0
-//#define SENSOR
-#define RECEIVER
 
-
-#define SKETCHNAME "TiNo2 receive.ino Ver. 18/11/2023"
+#define SKETCHNAME "TiNo2 receive.ino V2.4.1 18/11/2023"
 #define BUILD 11
 
 #include <avr/sleep.h>
@@ -68,7 +65,7 @@ HardwareSerial *mySerial = &Serial;
 
 // define this if you use a DS18B20
 // if you don't, code size remains below 32kB so you can use a Atmega3208.
-#define USE_DS18B20
+// #define USE_DS18B20
 /*****************************************************************************/
 /***                      Class instances                                  ***/
 /*****************************************************************************/
@@ -628,7 +625,8 @@ void loop()
 
     Mac.radio_receive(false); // non- blocking
     {
-        if (Mac.rxpacket.success) // only show good packets
+        bool packet_is_valid = true;
+        if (Mac.rxpacket.success && Mac.rxpacket.payload[NODEID] != 0) // only show good packets
         {
             // common for all formats
             mySerial->print(Mac.rxpacket.payload[NODEID],DEC); mySerial->print(" ");
@@ -643,7 +641,7 @@ void loop()
                 mySerial->print("&c=");  mySerial->print(pl->count);
                 mySerial->print("&t=");  mySerial->print((pl->temp - 1000)*4);
                 mySerial->print("&h=");  mySerial->print(int(pl->humidity/2.0*100));
-                mySerial->print("&f=");  mySerial->print(pl->flags,HEX);
+                mySerial->print("&f=");  mySerial->print(pl->flags & 0x1f,HEX);
 
                 if (Mac.rxpacket.datalen >=12)
                 {
@@ -669,7 +667,7 @@ void loop()
             {
                 PayloadAck *pl = (PayloadAck*)Mac.rxpacket.payload;
 
-                mySerial->print("&f=");  mySerial->print(pl->flags,HEX);
+                mySerial->print("&f=");  mySerial->print(pl->flags & 0x1f,HEX);
                 //fei  //can't report at this time  (no tag)
                 mySerial->print("&c=");  mySerial->print(pl->count);
                 mySerial->print("&t=");  mySerial->print(pl->temp);
@@ -700,7 +698,7 @@ void loop()
                             mySerial->print("&t=");  mySerial->print((pl->temp - 1000)*4);
                             mySerial->print("&h=");  mySerial->print(int(pl->humidity/2.0*100));
                             mySerial->print("&p=");  mySerial->print(pl->pressure);
-
+                            mySerial->print("&f=");  mySerial->print(pl->flags & 0x1f,HEX);
                             extract_interrupts(pl->flags);
                         }
                         break;
@@ -713,7 +711,7 @@ void loop()
                             mySerial->print("&t=");   mySerial->print((pl->temp - 1000)*4);
                             mySerial->print("&t1=");  mySerial->print((pl->temp1 - 1000)*4);
                             mySerial->print("&t2=");  mySerial->print((pl->temp2 - 1000)*4);
-
+                            mySerial->print("&f=");  mySerial->print(pl->flags & 0x1f,HEX);
                             extract_interrupts(pl->flags);
                         }
                         break;
@@ -726,6 +724,8 @@ void loop()
                             mySerial->print("&h=");   mySerial->print(int(pl->humidity/2.0*100));
                             mySerial->print("&t1=");  mySerial->print((pl->temp1 - 1000)*4);
                             mySerial->print("&br=");  mySerial->print(pl->brightness);
+                            mySerial->print("&f=");  mySerial->print(pl->flags & 0x1f,HEX);
+                            extract_interrupts(pl->flags);
                         }
                         break;
                     case 6:
@@ -759,19 +759,25 @@ void loop()
                                 default:
                                     break;
                             }
+                            mySerial->print("&f=");  mySerial->print(pl->flags & 0x1f,HEX);
+                            extract_interrupts(pl->flags);
                         }
                         break;
                     default:
                         // packet is invalid
+                        packet_is_valid = false;
                         break;
                 }
 
             }
-            mySerial->print("&rssi=");    mySerial->print(int(Mac.rxpacket.RSSI*10));
-            //mySerial->print("&fo=");    mySerial->print(int16_t(Mac.rxpacket.FEI*radio.FSTEP), DEC); // need to multiply with the resolution of the PLL (in Hz), but I don't need fractions of a Hz
-            if (Config.FecEnable) { mySerial->print("&be=");  mySerial->print(Mac.rxpacket.numerrors); }
-            mySerial->println("");
-            Mac.rxpacket.payload[NODEID] =0;
+            if (packet_is_valid)
+            {
+                mySerial->print("&rssi=");    mySerial->print(int(Mac.rxpacket.RSSI*10));
+                //mySerial->print("&fo=");    mySerial->print(int16_t(Mac.rxpacket.FEI*radio.FSTEP), DEC); // need to multiply with the resolution of the PLL (in Hz), but I don't need fractions of a Hz
+                if (Config.FecEnable) { mySerial->print("&be=");  mySerial->print(Mac.rxpacket.numerrors); }
+                mySerial->println("");
+                Mac.rxpacket.payload[NODEID] =0;
+            }
         }
         else if (Mac.rxpacket.errorcode<0)
         {
@@ -821,31 +827,31 @@ void loop()
             success |= HTU21D_Measure(Config.SensorConfig & HTU21D_bm, myHTU21D, SensorData);
             if (success & HTU21D_bm)
             {
-                print_humidity_sensor_values("HTU21D", SensorData.temperature, SensorData.humidity, mySerial);
+                //print_humidity_sensor_values("HTU21D", SensorData.temperature, SensorData.humidity, mySerial);
             }
 
             success |= SHT_Measure(Config.SensorConfig & SHT3X_bm, SHT3X, SensorData);
             if (success & SHT3X_bm)
             {
-                print_humidity_sensor_values("SHT3x", SensorData.temperature, SensorData.humidity, mySerial);
+                //print_humidity_sensor_values("SHT3x", SensorData.temperature, SensorData.humidity, mySerial);
             }
 
             success |= SHT_Measure(Config.SensorConfig & SHTC3_bm, SHTC3, SensorData);
             if (success & SHTC3_bm)
             {
-                print_humidity_sensor_values("SHTC3", SensorData.temperature, SensorData.humidity, mySerial);
+                //print_humidity_sensor_values("SHTC3", SensorData.temperature, SensorData.humidity, mySerial);
             }
 
             success |= SHT_Measure(Config.SensorConfig & SHT4X_bm, SHT4X, SensorData);
             if (success & SHT4X_bm)
             {
-                print_humidity_sensor_values("SHT4X", SensorData.temperature, SensorData.humidity, mySerial);
+                //print_humidity_sensor_values("SHT4X", SensorData.temperature, SensorData.humidity, mySerial);
             }
 
             success |= BME280_Measure(Config.SensorConfig & BME280_bm, BME280, SensorData);
             if (success & BME280_bm)
             {
-                print_humidity_sensor_values("BME280", SensorData.temperature, SensorData.humidity, mySerial);
+                //print_humidity_sensor_values("BME280", SensorData.temperature, SensorData.humidity, mySerial);
             }
 
             if(success)
