@@ -1,0 +1,4 @@
+Version 1.2.2
+add key.h to TiNo2 library. Remove Key definition from sketches
+Version 1.2.3
+remove key.h from library.

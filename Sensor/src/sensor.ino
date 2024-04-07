@@ -1,6 +1,6 @@
 // RFM69CW Sender for TiNo2 temperature / humidity Sensors with Watchdog.
-// Supports Sensors with HTU21D, SHT20, SHT21, SHT25, SHT3C(default on-board chip), SHT30, SHT31, SHT35, 
-// SHT40, SHT41, SHT43, SHT45, BME280, DS18B20, MAX31865 (PT100 or PT1000), 
+// Supports Sensors with HTU21D, SHT20, SHT21, SHT25, SHT3C(default on-board chip), SHT30, SHT31, SHT35,
+// SHT40, SHT41, SHT43, SHT45, BME280, DS18B20, MAX31865 (PT100 or PT1000),
 // built for AVR ATMEGA4808 and AVR DD devices
 
 
@@ -40,8 +40,8 @@
 // Uses HTU21D from https://github.com/enjoyneering/HTU21D under BSD licence
 // Uses a RFM69 Driver originally from LowPowerlab.com However this driver has been changed so much so that it is barely recognizable.
 // uses a modified BME280 Driver from https://github.com/finitespace/BME280 under GNU General Public License version 3 or later
-// Uses OneWire             // license terms not clearly defined.
-// Uses DallasTemperature under GNU LGPL version 2.1 or any later version.
+// Uses OneWire from https://github.com/nurazur/OneWire    // license terms not clearly defined.
+// Uses DallasTemperature from https://github.com/milesburton/Arduino-Temperature-Control-Library under GNU LGPL version 2.1 or any later version.
 // Uses Sensirion SHT library from https://github.com/Sensirion/arduino-sht under BSD 3-Clause "New" or "Revised" License
 // Uses MAX31865 from Ole Wolf <wolf@blazingangles.com> at https://github.com/olewolf/arduino-max31865.git under GNU General Public License version 3 or later
 //
@@ -95,41 +95,60 @@
 #include "print_things.h"
 #include "pitctrl.h"
 
-#define FILENAME "TiNo2 sensor.ino 08/02/2024"
+
+
+#define FILENAME "TiNo2 sensor.cpp 2V6 29/03/2024"
 #define BUILD 11
-#define USE_RADIO
+
 #define RADIO_SPI_PINSWAP 0
-#define SEND_BURST
-//#define BATTERYTEST
-#define DEBUG 0
+
 #define P(a) if(Config.SerialEnable) mySerial->a
+
+/*****************************************************************************/
+/***                            Compiler Switches                          ***/
+/*****************************************************************************/
+// encryption key, if any
+// debug modes, enable/disable radio
+
+#include "user_config.h"
+
 
 /*****************************************************************************/
 /***              One-Wire and DS18B20 Temperature Sensors                 ***/
 /*****************************************************************************/
 // using DS18B20 is not recommended, the conversion time takes much longer
 // (700-900 ms) than with I2C based sensors (<50ms).
-// Commenting out the header will remove the entire DS18B20 Module from the Sketch.
-//#include "ds18b20.h"
+#if defined USE_DS18B20
+#include "ds18b20.h"
+#warning DS18B20 Temperature Sensor included
+#endif
 
 /****************************************************************************/
 /**********                    MAX31865   PT100(0)                 **********/
 /****************************************************************************/
-//#include "tino_max31865.h"
+#if defined USE_MAX31865
+#include "tino_max31865.h"
+#warning MAX31865 RTD included
+#endif
+
 #define MAX31865_INTERRUPT 1
 
 #if (defined TINO_MAX31865_H && MAX31865_INTERRUPT)
-#define PIN18INTERRUPTFUNC 
+#define PIN18INTERRUPTFUNC
 void Pin18InteruptFunc(){}
 #endif
+
+
 /****************************************************************************/
 /**********                    MAX31855 k-Type Thermocouple        **********/
 /****************************************************************************/
-// #include "tino_max31855.h"
-
+#if defined USE_MAX31855
+#include "tino_max31855.h"
+#warning MAX31855 Thermocouple included
+#endif
 
 /****************************************************************************/
-/**********                  MAX31856 any-Type Thermocouple        **********/
+/**********                  MAX31856     Type Thermocouple        **********/
 /****************************************************************************/
 //#include "tino_max31856.h"
 
@@ -156,8 +175,10 @@ void Pin18InteruptFunc(){}
 /****************************************************************************/
 /**********                    ADS1120 ADC                         **********/
 /****************************************************************************/
+#if defined USE_ADS1120
 #include "tino_ads1120.h"
-#define ADS1120_DOSLEEP 1  // 1= use sleep method, 0 = use polling method
+#endif
+
 
 /****************************************************************************/
 /**********                    TiNo Packet Manager                 **********/
@@ -178,15 +199,7 @@ RADIO radio;
 #include "configuration.h"
 #include "calibrate.h"
 
-/*****************************************************************************/
-/***                            Encryption                                 ***/
-/*****************************************************************************/
-//encryption is OPTIONAL by compilation switch
-//to enable encryption you will need to:
-// - provide a 16-byte encryption KEY (same on all nodes that talk encrypted)
-// - set the varable ENCRYPTION_ENABLE to 1 in the EEPROM, at runtime in Cfg.EncryptionEnable
 
-#define KEY     "TheQuickBrownFox"
 /*****************************************************************************/
 /***                   Device specific Configuration                       ***/
 /*****************************************************************************/
@@ -204,8 +217,12 @@ myMAC Mac(radio, Config, (uint8_t*) KEY);
 /*****************************************************************************/
 // only Hardwareserial is supported.
 // 5 serial ports are defined; Serial, Serial1 and Serial2
-// Serial and Serial2 have alternate pin positions, using the swap funktion.
-#define SERIAL_BAUD     57600
+// Serial and Serial2 have alternate pin positions, using the swap function.
+#ifndef SERIAL_BAUD
+#warning no baud rate for serial port specified: fall back to 38400 Bd
+#define SERIAL_BAUD  38400
+#endif
+
 #define SERIAL_SWAP     0
 HardwareSerial *mySerial = &Serial;
 
@@ -607,6 +624,7 @@ void setup() {
     }
 
     SensorData.PowerPin = Config.I2CPowerPin;
+    SensorData.pressure = 0;
 
     // (UseBits) Config.SensorConfig does not work (compiler error), so we need a workaround
     UseBits *sensors = (UseBits*)&Config.SensorConfig;
@@ -614,6 +632,11 @@ void setup() {
 
     Wire.swap(0); // 0 is default, 1 is identical with 0, 3 has the same pins as UART0
     Wire.begin();
+    if (sensors->BME280 && F_CPU > 1000000)
+        Wire.setClock(50000);
+    //else
+        //Wire.setClock(400000); // must be thorowly tested
+
     if (sensors->SHTC3)
     {
         sensors->SHTC3 = SHT_Init(sensors->SHTC3, SHTC3, SHTSensor::SHTC3);
@@ -636,6 +659,8 @@ void setup() {
     BME280_Init  (*sensors);
 
     TiNo = new PacketHandler(*sensors);
+    TiNo->pressure(0);
+    TiNo->brightness(0);
 
     #if DEBUG >=1
     mySerial->print("packet type: "); mySerial->print(TiNo->PacketType);
@@ -654,7 +679,7 @@ void setup() {
 
     #ifdef TINO_MAX31865_H
     #if MAX31865_INTERRUPT
-    attachInterrupt(18, Pin18InteruptFunc, FALLING); // define interrupt on Pin 18, fullt asynchronuous Pin (4808 only)
+    attachInterrupt(18, Pin18InteruptFunc, FALLING); // define interrupt on Pin 18, fully asynchronuous Pin (4808 only)
     #endif
     RTD_Init(TiNo->use.MAX31865, Config.RTDPowerPin, Config.RTDCSPin);
     mySerial->println("RTD (PT100) device MAX31865 initialized.");
@@ -690,11 +715,14 @@ void setup() {
     #warning MAX6675 (K type Thermocouple) Module included in this build
     #endif
     #endif
-    
+
     #ifdef TINO_ADS1120_H
     ThermoCouple_Init_ADS1120(TiNo->use.MAX31865, 18, Config.RTDCSPin, ADS1120_DOSLEEP); // define interrupt on Pin 18, fully asynchronuous Pin
     if (TiNo->use.MAX31865)
         mySerial->println("Thermocouple device ADS1120 initialized.");
+    #if DEBUG > 0
+    #warning ADS1120 (K type Thermocouple) Module included in this build
+    #endif
     #endif
 
     I2C_shutdown(Config.I2CPowerPin);
@@ -723,14 +751,21 @@ void setup() {
 
     PIT.init(Config.UseCrystalRtc, 0);
     PIT.enable();
-    if (Config.UseCrystalRtc) Config.Senddelay *= 8; // so the total delay time  is 8s;
 
+    if (Config.UseCrystalRtc)
+    {
+        Config.Senddelay *= 8; // so the total delay time  is 8s;
+        #if defined ARDUINO_avrdd
+        CPU_CCP = CCP_IOREG_gc;
+        CLKCTRL.OSCHFCTRLA |= 0x1; // Autotune feature on
+        #endif
+    }
 
     set_sleep_mode(SLEEP_MODE_PWR_DOWN);      // set sleep mode
     sleep_enable();    // enable sleep control
 
     /*** test of internal temperature sensor
-         results are unsatisfying :( despite factory calibration
+         results are unsatisfying :(( despite factory calibration )
     ***/
     #if DEBUG > 0
     #if defined (MEGACOREX)
@@ -1084,8 +1119,20 @@ void loop()
         TiNo->nodeid(Config.Nodeid | 0x80); // 2 nodeids. Normal node and measurement packets alternating!
 
         // temp is used for idle voltage, humidity and flags are used as counter bytes.
-        TiNo->humidity((uint8_t)&total_count[1]);
-        TiNo->flags((uint8_t)&total_count[2]);
+        TiNo->humidity(((uint8_t*)&total_count)[1]);
+        TiNo->flags(((uint8_t*)&total_count)[2]);
+
+        // Zeiger auf total_count, gecastet auf Zeiger auf uint8_t plus 1, nehme den Inhalt des Zeigers
+        //TiNo->humidity( *(((uint8_t*)&total_count)+1) ); // monster construction - works, unreadable
+
+        // TiNo->humidity(((uint8_t*)&total_count)[1]); // works, still difficult to read;
+
+        // brute force approach, yet well readable
+        //TiNo->humidity((uint8_t)(total_count>>8)); // works with pio
+        //TiNo->flags((uint8_t) (total_count>>16));
+
+
+
         TiNo->temp(Vcal_x_ADCcal / readVcc()); // Idle mode Vcc
         if (Config.SerialEnable)
         {

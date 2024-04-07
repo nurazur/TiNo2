@@ -158,7 +158,7 @@ Then install the libraries by using the Arduino IDE:<br>
     b. navigate to the `sensor` or `receiver` folder of the TiNo2 project by using the `cd <path>` command.<br>
     c. to compile, run the command `pio run`.
         The `atmelmegaavr` core library will be installed if not yet available.
-        All project related libraries are downloaded and installed automatically. This is one of the big advantages over the Arduino IDE.
+        All project related libraries are downloaded and installed automatically. This is one of the big advantages over the Arduino IDE.<br>
     d. to upload a sketch to the target device, run `pio run -t upload`.
     <br>In case you need to use a port different from the default one, add the option `-upload-port <port>` to the command line.<br>
     e. please refer to the PLatformIO documentation how to customize the `platformio.ini` project configuration file.

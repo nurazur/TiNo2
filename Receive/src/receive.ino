@@ -37,14 +37,14 @@
 // extended by nurazur nurazur@gmail.com 2014 - 2024
 // the RF protocol is completely binary, see https://github.com/nurazur/tino
 
-#define DEBUG 0
+// TiNo2 Gateway supports on-board measurements of temperature/humidity as well as BME280 and Dallas DS18B20.
 
-#define SKETCHNAME "TiNo2 receive.ino V2.4.1 18/11/2023"
+#define SKETCHNAME "TiNo2 receive.ino V2.6.0 07/04/2024"
 #define BUILD 11
 
+#include <Arduino.h>
 #include <avr/sleep.h>
 
-#define SERIAL_BAUD 230400
 #define SERIAL_SWAP     0
 HardwareSerial *mySerial = &Serial;
 
@@ -61,11 +61,9 @@ HardwareSerial *mySerial = &Serial;
 #include "calibrate.h"
 #include "SHTSensor.h"
 
-#define KEY  "TheQuickBrownFox"
+#include "key.h"
 
-// define this if you use a DS18B20
-// if you don't, code size remains below 32kB so you can use a Atmega3208.
-// #define USE_DS18B20
+
 /*****************************************************************************/
 /***                      Class instances                                  ***/
 /*****************************************************************************/
@@ -149,59 +147,16 @@ void disablePinISC(uint8_t pin)
 }
 
 
-void I2C_shutdown(uint8_t PowerPin)
-{
-    (void)PowerPin;
-}
-
-void I2C_pullup(uint8_t PowerPin)
-{
-    (void)PowerPin;
-}
-
-
 /*****************************************************************************/
 /***              SHT3x and SHTC3  Humidity Sensor                         ***/
 /*****************************************************************************/
-#include "sht_sensors.h"
+#include "sht_sensors.h" //TiNo2 wrapper class
 
 SHTSensor *SHT3X=NULL;
 SHTSensor *SHTC3=NULL;
 SHTSensor *SHT4X=NULL;
 
 HumiditySensor SensorData;
-
-static bool SHTC3_Init(UseBits &enable)
-{
-    if (enable.SHTC3)
-    {
-        enable.SHTC3 = SHT_Init(enable.SHTC3, SHTC3, SHTSensor::SHTC3);
-        print_init_result(enable.SHTC3, "SHTC3");
-    }
-    return enable.SHTC3;
-}
-
-static bool SHT3X_Init(UseBits &enable)
-{
-    if (enable.SHT3X)
-    {
-        enable.SHT3X = SHT_Init(enable.SHT3X, SHT3X, SHTSensor::SHT3X);
-        print_init_result(enable.SHT3X, "SHT3X");
-    }
-   return enable.SHT3X;
-}
-
-static bool SHT4X_Init(UseBits &enable)
-{
-    if (enable.SHT4X)
-    {
-        enable.SHT4X = SHT_Init(enable.SHT4X, SHT4X, SHTSensor::SHT4X); // just an example how to use the general SHT initialization
-        print_init_result(enable.SHT4X, "SHT4X");
-    }
-    return enable.SHT4X;
-}
-
-
 
 
 /*****************************************************************************/
@@ -572,31 +527,45 @@ void setup()
     digitalWrite(Config.I2CPowerPin, HIGH);
     delay(1);
 
-    UseBits* u;
-    u = (UseBits*)&Config.SensorConfig;
+    UseBits* sensors;
+    sensors = (UseBits*)&Config.SensorConfig;
 
     Wire.swap(0);
     Wire.begin();
-    HTU21D_Init(*u);
-    SHT3X_Init(*u);
-    SHTC3_Init(*u);
-    SHT4X_Init(*u);
+    HTU21D_Init(*sensors);
+    if (sensors->SHTC3)
+    {
+        sensors->SHTC3 = SHT_Init(sensors->SHTC3, SHTC3, SHTSensor::SHTC3);
+        print_init_result(sensors->SHTC3, "SHTC3");
+    }
+
+    if (sensors->SHT3X)
+    {
+        sensors->SHT3X = SHT_Init(sensors->SHT3X, SHT3X, SHTSensor::SHT3X);
+        print_init_result(sensors->SHT3X, "SHT3X");
+    }
+
+    if (sensors->SHT4X)
+    {
+        sensors->SHT4X = SHT_Init(sensors->SHT4X, SHT4X, SHTSensor::SHT4X);
+        print_init_result(sensors->SHT4X, "SHT4X");
+    }
 
     #if defined USE_DS18B20
-    if (u->DS18B20)
+    if (sensors->DS18B20)
     {
-        uint8_t num_ds18b20 = DS18B20_Init (u->DS18B20, Config.OneWirePowerPin, Config.OneWireDataPin);
-        if (num_ds18b20==0) u->DS18B20=0;
+        uint8_t num_ds18b20 = DS18B20_Init (sensors->DS18B20, Config.OneWirePowerPin, Config.OneWireDataPin);
+        if (num_ds18b20==0) sensors->DS18B20=0;
     }
     #endif
 
-    BME280_Init(*u);
+    BME280_Init(*sensors);
 
     // Initialize LDR, if enabled
-    if (u->BRIGHTNESS)
+    if (sensors->BRIGHTNESS)
     {
-        u->BRIGHTNESS = LDR_Init(Config.LdrPin);
-        if (u->BRIGHTNESS)
+        sensors->BRIGHTNESS = LDR_Init(Config.LdrPin);
+        if (sensors->BRIGHTNESS)
             mySerial->println("LDR initialized.");
         else
             mySerial->println("LDR NOT initialized.");
