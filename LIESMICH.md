@@ -6,7 +6,7 @@ Der Master-Branch ist als Entwicklungsbranch gedacht, die Verwendung, auch einze
 
 # Einführung
 "**TI**ny **NO**de" : Batteriebetriebener Funksensor oder Funk-Aktor.
-Dies ist die zweite Generation des TiNo mit zahlreichen Verbesserungen. Hauptsaechlich hat der TiNo2 mehr Flash Speicher, und der Stromverbrauch wurde weiter reduziert. Die Antenne ist jetzt auf der leiterplatte untergebracht. TiNo2 basiert auf der neuen Generation von AVR Prozessoren, zunaechst dem ATmega4808.
+Dies ist die zweite Generation des TiNo mit zahlreichen Verbesserungen. Hauptsächlich hat der TiNo2 mehr Flash Speicher, und der Stromverbrauch wurde weiter reduziert. Die Antenne ist jetzt auf der leiterplatte untergebracht. TiNo2 basiert auf der neuen Generation von AVR Prozessoren, zunaechst dem ATmega4808.
 Die Kernpunkte des TiNo2 sind (immer noch)
 
 - geringst mögliche Kosten (Stückkosten unter 5 EUR, Stand 2020, ca. 8 EUR Stand 2023)
@@ -35,10 +35,9 @@ Die Leiterplatten passen zu im Handel erhältlichen PVC Gehäusen, welche in etw
 - SHTC3
 - SHT40, SHT41, SHT43, SHT45
 - BME280 Luftdruck Sensor
-- DS18B20 (beliebter Temperatursensor)
+- DS18B20 (beliebter Temperatursensor, da auch in wasserdichten Versionen verfügbar)
 - MAX31865 (PT100 Temperatur Sensor)
 - AM312 PIR Bewegungssensor
-- MAX31865 PT100 Temperatur Sensor
 - [](https://github.com/nurazur/TiNo2/blob/e5b521a594be324584e5fc79e4e9750f60dd1295/New_smaller.png) MAX6675, MAX31855K, MAX31856, ADS1120 ADC IC's für Thermoelemente
 - LDR als Helligkeitssensor
 - I2C oder SPI basierte Sensoren leicht konfigurierbar
@@ -62,7 +61,7 @@ Die Leiterplatten passen zu im Handel erhältlichen PVC Gehäusen, welche in etw
 
 ## Basisband
 - Microchip ATMega4808-au
-- ![](https://github.com/nurazur/TiNo2/blob/e5b521a594be324584e5fc79e4e9750f60dd1295/New_smaller.png) auch für Micrpchip AVR64DD28 and AVR64DD28 MCU's
+- ![](https://github.com/nurazur/TiNo2/blob/e5b521a594be324584e5fc79e4e9750f60dd1295/New_smaller.png) auch für Micropchip AVR64DD28 and AVR64DD28 MCU's
 - 48kByte Flash (64kByte Flash on AVR64DD)
 - Ruhestrom < 2uA
 - Ruhestrom ca. 1uA mit TPL5110 (extern)
@@ -75,8 +74,8 @@ Die Leiterplatten passen zu im Handel erhältlichen PVC Gehäusen, welche in etw
 ## System / Software
 - Open Source Software C++
 - Software kann einfach individuell angepasst werden
-- Programmierung mit Arduino IDE
-- ![](https://github.com/nurazur/TiNo2/blob/e5b521a594be324584e5fc79e4e9750f60dd1295/New_smaller.png)supports PLatformIO
+- Programmierung mit Arduino IDE, und/oder
+- ![](https://github.com/nurazur/TiNo2/blob/e5b521a594be324584e5fc79e4e9750f60dd1295/New_smaller.png)Programmierung mit PLatformIO
 - Konfiguration der Nodes über serielles Interface (FTDI Adapter)
 - Konfigurations- und Kalibrierdaten im EEPROM gespeichert (verschlüsselt)
 - Flashen
@@ -86,7 +85,7 @@ Die Leiterplatten passen zu im Handel erhältlichen PVC Gehäusen, welche in etw
 - [Interface zu IOBroker](https://github.com/bowao/ioBroker.tino/)
 
 # Installation mit der Arduino IDE
-Die gesamte Installation benötigt nur einige Minuten. MegaCoreX ist der Kernel den man für den Atmega4808 braucht und der leider nicht in der Arduino IDE mitgeliefert wird.
+Die gesamte Installation geht in 3 Schritten und benötigt nur einige Minuten. MegaCoreX ist der Kernel den man für den Atmega4808 braucht und der leider nicht in der Arduino IDE mitgeliefert wird.
 
 1. Installiere MegaCoreX
 2. Installiere TiNo2 Bibliotheken
@@ -151,18 +150,18 @@ Installiere die Bibliotheken mit der Arduino IDE:<br>
 wobei "User" der Pfad zum PLatformIO Installationsordner ist.<br>
 
 3. Herunterladen des TiNo2 Bereichs von [Github](https://github.com/nurazur/TiNo2) als zip Datei. Kopieren der Ordner `libraries`, `sensor` und `receiver` in einen Projektordner freier Wahl.
-4. Wenn Verwendung von VS Code mit PlatformIO IDE, neues Projekt eroeffnen navigiere zum `sensor` oder `receiver` Ordner. Arbeite weiter von hier aus mit der PlatformIO.
+4. Wenn Verwendung von VS Code mit PlatformIO IDE, neues Projekt eröffnen, navigiere zum `sensor` oder `receiver` Ordner. Arbeite weiter von hier aus mit der PlatformIO.
 5. Bei Verwendung der PlatformIO CLI vom Command-Prompt, wie folgt vorgehen:<br>
-  a. Konsole oeffnen (Windows: cmd.exe)<br>
-  b. Zum `sensor` oder `receiver` Ordner des TiNo2 Projekts wechseln mit `cd <path>`. Wobei <path> der Pfas zum jeweiligen Ordner ist.<br>
+  a. Konsole öffnen (Windows: cmd.exe)<br>
+  b. Zum `sensor` oder `receiver` Ordner des TiNo2 Projekts wechseln mit `cd <path>`.<br>
   c. Zum Kompilieren `pio run` eingeben.
-      Der `atmelmegaavr` Kernel wird istalliert falls noch nicht auf dem PC vorhanden.
-      Alle vom Projekt benoetigten Bibliotheken werden automatisch heruntergeladen und installiert. Dies ist einer der grossen Vorteile ueber die Arduino IDE.<br>
-  d. Um einen Sketch auf den TiNo2 zu uebertragen, das Kommando `pio run -t upload` eingeben.
+      Der `atmelmegaavr` Kernel wird installiert falls noch nicht auf dem PC vorhanden.
+      Alle vom Projekt benoetigten Bibliotheken werden automatisch heruntergeladen und installiert. Dies ist einer der grossen Vorteile gegenüber der Arduino IDE.<br>
+  d. Um einen Sketch auf den TiNo2 zu übertragen, das Kommando `pio run -t upload` eingeben.
   <br>Falls ein anderer Port benutzt wird als derjenige, der in der `platform.ini` voreingestellt ist, Option `-upload-port <port>` zum Kommando hinzufuegen.<br>
   e. Die PLatformIO Dokumentation konsultieren um die `platformio.ini` Konfigurationsdatei zu personalisieren.
 
 ## Fuses
 Kommando `pio run -e fuses_bootloader -t fuses` in der Konsole eingeben. Wie das in  VS Code funktioniert, weiß ich nicht.
 ## Burning a Bootloader
-Kommando `pio run -e fuses_bootloader -t fuses` in der Konsole eingeben. Wer Platformio vor dem 20.Februar2024 installiert hat, bechtet bitte diesen Bug: [https://github.com/platformio/platform-atmelmegaavr/pull/67](https://github.com/platformio/platform-atmelmegaavr/pull/67)
+Kommando `pio run -e fuses_bootloader -t fuses` in der Konsole eingeben. Wer Platformio vor dem 20.Februar2024 installiert hat, beachtet bitte diesen Bug: [https://github.com/platformio/platform-atmelmegaavr/pull/67](https://github.com/platformio/platform-atmelmegaavr/pull/67)
