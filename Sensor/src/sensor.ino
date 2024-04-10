@@ -87,29 +87,21 @@
 #include <avr/io.h>
 #include <avr/sleep.h>
 #include <avr/interrupt.h>
-#include "SHTSensor.h"
-#include "datalinklayer.h"
-#include "PacketHandler.h"
-#include "SPI.h"
-#include "PinchangeInterrupt.h"
-#include "print_things.h"
-#include "pitctrl.h"
+#include <SPI.h>
+#include "tino2.h"
 
-
-
-#define FILENAME "TiNo2 sensor.cpp 2V6 29/03/2024"
+#define FILENAME "TiNo2 sensor.cpp V2.6.1 10/04/2024"
 #define BUILD 11
-
 #define RADIO_SPI_PINSWAP 0
 
 #define P(a) if(Config.SerialEnable) mySerial->a
 
 /*****************************************************************************/
-/***                            Compiler Switches                          ***/
+/***                            User Configuration                         ***/
 /*****************************************************************************/
 // encryption key, if any
 // debug modes, enable/disable radio
-
+// enable thermocouple sensor
 #include "user_config.h"
 
 
@@ -168,9 +160,10 @@ void Pin18InteruptFunc(){}
 /****************************************************************************/
 /**********                    MAX6675 k-Type Thermocouple         **********/
 /****************************************************************************/
-//#include "tino_max6675.h"
-
 // obsolete Chip. Use MAX31855 instead
+#if defined USE_MAX6675
+#include "tino_max6675.h"
+#endif
 
 /****************************************************************************/
 /**********                    ADS1120 ADC                         **********/
@@ -189,15 +182,9 @@ PacketHandler *TiNo=NULL;
 /*****************************************************************************/
 /***   Radio Driver Instance                                               ***/
 /*****************************************************************************/
-#include "RFM69.h"
-
 RADIO radio;
 //RADIO radio(SS,15,0, digitalPinToInterrupt(15)); // for TiNo2 development boards, series 0 only
-/*****************************************************************************/
-/***  EEPROM Access  and device calibration / Configuration                ***/
-/*****************************************************************************/
-#include "configuration.h"
-#include "calibrate.h"
+
 
 
 /*****************************************************************************/
@@ -264,26 +251,18 @@ void disablePinISC(uint8_t pin)
 /*****************************************************************************/
 /******                   Periodic Interrupt Timer and RTC setup         *****/
 /*****************************************************************************/
-
 PITControl PIT;
-
-
-/*****************************************************************************/
-/***                  I2C Bus Tools                                        ***/
-/*****************************************************************************/
-#include "i2c_common.h"
 
 
 /*****************************************************************************/
 /***              SHT3x and SHTC3  Humidity Sensor                         ***/
 /*****************************************************************************/
-#include "sht_sensors.h"
-
 HumiditySensor SensorData;
 
 SHTSensor *SHT3X=NULL;
 SHTSensor *SHTC3=NULL;
 SHTSensor *SHT4X=NULL;
+
 
 /*****************************************************************************/
 /***              HTU21D  Humidity Sensor                                  ***/
@@ -433,7 +412,6 @@ static void SPI_MISO_Disable(uint8_t swap)
 /*****************************************************************************/
 /***                   READ VCC                                            ***/
 /*****************************************************************************/
-#include "analog.h"
 long Vcal_x_ADCcal;
 
 
@@ -467,7 +445,7 @@ void wakeUp3() { event_triggered |= 0x8; }
 /***                   PIR                                                 ***/
 /*****************************************************************************/
 
-#include "PIR.h"
+//#include "PIR.h"
 PIRModule PIR(Config, mySerial, wakeUp1);
 
 /*****************************************************************************/

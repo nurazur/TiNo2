@@ -39,7 +39,7 @@
 
 // TiNo2 Gateway supports on-board measurements of temperature/humidity as well as BME280 and Dallas DS18B20.
 
-#define SKETCHNAME "TiNo2 receive.ino V2.6.0 07/04/2024"
+#define SKETCHNAME "TiNo2 receive.ino V2.6.1 07/04/2024"
 #define BUILD 11
 
 #include <Arduino.h>
@@ -49,19 +49,11 @@
 HardwareSerial *mySerial = &Serial;
 
 // basically this sketch supports frequency hopping.
-// Working, but It needs to be thoroughly tested though
+// Working, but It needs to be thoroughly tested.
 #define NUM_CHANNELS 1
 
-
-#include "configuration.h"
-#include <datalinklayer.h>
-#include "PacketHandler.h" // definition of UseBits struct
-#include "print_things.h"
-#include <RFM69.h>
-#include "calibrate.h"
-#include "SHTSensor.h"
-
-#include "key.h"
+#include "tino2.h"
+#include "user_config.h"
 
 
 /*****************************************************************************/
@@ -74,7 +66,7 @@ Calibration CalMode(Config, mySerial, &Mac, BUILD, (uint8_t*) KEY);
 /*****************************************************************************/
 /******                   Periodic Interrupt Timer and RTC setup         *****/
 /*****************************************************************************/
-#include "pitctrl.h"
+
 PITControl PIT;
 
 ISR(RTC_PIT_vect)
@@ -86,7 +78,7 @@ ISR(RTC_PIT_vect)
 /*****************************************************************************/
 /***                       Actions                                         ***/
 /*****************************************************************************/
-#include "actions.h"
+//#include "actions.h"
 
 /* Globals */
 extern action *actions;
@@ -150,8 +142,6 @@ void disablePinISC(uint8_t pin)
 /*****************************************************************************/
 /***              SHT3x and SHTC3  Humidity Sensor                         ***/
 /*****************************************************************************/
-#include "sht_sensors.h" //TiNo2 wrapper class
-
 SHTSensor *SHT3X=NULL;
 SHTSensor *SHTC3=NULL;
 SHTSensor *SHT4X=NULL;
@@ -269,7 +259,6 @@ uint8_t BME280_Measure(uint8_t enabled, BME280I2C *Bme280, HumiditySensor &Data)
 /*****************************************************************************/
 /***                       Pin Change Interrupts                           ***/
 /*****************************************************************************/
-#include "PinchangeInterrupt.h"
 uint8_t event_triggered = 0;
 
 // ISR for the Pin change Interrupt
@@ -306,7 +295,7 @@ void activityLed (unsigned char state, unsigned int time = 0)
 /*****************************************************************************/
 /***                   READ VCC                                            ***/
 /*****************************************************************************/
-#include "analog.h"
+//#include "analog.h"
 long Vcal_x_ADCcal;
 
 /**********************************************************************/

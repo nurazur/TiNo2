@@ -9,8 +9,8 @@
 
 // comment the following line if you don't want to encrypt RF message traffic
 // it is STRONGLY recommended to change de Key below to your own 16-Byte Password
-//#define KEY   "TheQuickBrownFox"
-#define KEY   "WiNW_AzurdelaMer"
+#define KEY   "TheQuickBrownFox"
+
 #ifndef KEY
 #warning NO ENCRYPTION KEY DEFINED
 #define KEY NULL

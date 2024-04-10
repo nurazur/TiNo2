@@ -18,17 +18,17 @@
 /*****************************************************************************/
 /***                           Debug Modes                                 ***/
 /*****************************************************************************/
-// comment the following line for test purposes. If commented, the radio won't be used and 
+// comment the following line for test purposes. If commented, the radio won't be used and
 // a alternative loop function is compiled
 #define USE_RADIO
 
-// comment the follwing line if you want to use the radio, but just 
+// comment the follwing line if you want to use the radio, but just
 // skip sending a pulse (useful for debugging)
 #define SEND_BURST
 
 // Battery test enables a test message on even counts. the standard message protocol is then
-// abused to transmit a 24 bit count in the fileds count, humidity, flags. The temperature field is used to transmit 
-// idle voltage, the vcc field is used to transmit idle voltage. 
+// abused to transmit a 24 bit count in the fileds count, humidity, flags. The temperature field is used to transmit
+// idle voltage, the vcc field is used to transmit idle voltage.
 
 //#define BATTERYTEST
 
@@ -61,9 +61,18 @@
 
 
 /****************************************************************************/
+/**********                    MAX6675 k-Type Thermocouple         **********/
+/****************************************************************************/
+// obsolete Chip. Use MAX31855 instead
+// comment out the following line for use of a k-type Thermocouple with MAX6675
+
+//#define USE_MAX6675
+
+
+/****************************************************************************/
 /**********                    MAX31855 k-Type Thermocouple        **********/
 /****************************************************************************/
-// comment out the following line for use of a k-type Thermocouple with MAX31855  
+// comment out the following line for use of a k-type Thermocouple with MAX31855
 
 //#define USE_MAX31855
 
@@ -71,8 +80,8 @@
 /****************************************************************************/
 /**********                    ADS1120 ADC                         **********/
 /****************************************************************************/
-// comment out the following line for use of a k-type Thermocouple with ADS1120 
-#define USE_ADS1120
+// comment out the following line for use of a k-type Thermocouple with ADS1120
+// #define USE_ADS1120
 
 // specify whether you want to use the interrupt method (recommended) or the polling method (saves one GPIO)
 #if defined USE_ADS1120
