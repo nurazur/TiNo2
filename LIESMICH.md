@@ -163,5 +163,5 @@ wobei "User" der Pfad zum PLatformIO Installationsordner ist.<br>
 
 ## Fuses
 Kommando `pio run -e fuses_bootloader -t fuses` in der Konsole eingeben. Wie das in  VS Code funktioniert, weiß ich nicht.
-## Burning a Bootloader
+## Bootloader programmieren
 Kommando `pio run -e fuses_bootloader -t fuses` in der Konsole eingeben. Wer Platformio vor dem 20.Februar2024 installiert hat, beachtet bitte diesen Bug: [https://github.com/platformio/platform-atmelmegaavr/pull/67](https://github.com/platformio/platform-atmelmegaavr/pull/67)
