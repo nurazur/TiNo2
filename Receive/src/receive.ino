@@ -142,12 +142,11 @@ void disablePinISC(uint8_t pin)
 /*****************************************************************************/
 /***              SHT3x and SHTC3  Humidity Sensor                         ***/
 /*****************************************************************************/
+#include "sht_sensors.h"
+HumiditySensor SensorData;
 SHTSensor *SHT3X=NULL;
 SHTSensor *SHTC3=NULL;
 SHTSensor *SHT4X=NULL;
-
-HumiditySensor SensorData;
-
 
 /*****************************************************************************/
 /***              HTU21D  Humidity Sensor                                  ***/
