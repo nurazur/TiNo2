@@ -28,7 +28,6 @@
 // and copyright notices in any redistribution of this code
 // *********************************************************************************
 #include <Arduino.h>
-#include "SHTSensor.h"
 
 #ifndef I2C_COMMON_H
 #define I2C_COMMON_H

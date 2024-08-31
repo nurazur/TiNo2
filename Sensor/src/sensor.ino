@@ -257,6 +257,7 @@ PITControl PIT;
 /*****************************************************************************/
 /***              SHT3x and SHTC3  Humidity Sensor                         ***/
 /*****************************************************************************/
+#include "sht_sensors.h"
 HumiditySensor SensorData;
 
 SHTSensor *SHT3X=NULL;
