@@ -25,7 +25,7 @@ import atexit
 
 BAUDRATE= 230400
 #SERIAL_PORT = '/dev/ttyAMA0'
-SERIAL_PORT = 'COM4'
+SERIAL_PORT = 'COM3'
 
 
 #default filename for valid records
@@ -333,7 +333,7 @@ while (True):
             continue
 
 
-    if node is not '':
+    if node is not '' and node is not b'':
         if int(node) > 0:
             print (res_str)
 
