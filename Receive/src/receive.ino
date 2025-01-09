@@ -39,7 +39,7 @@
 
 // TiNo2 Gateway supports on-board measurements of temperature/humidity as well as BME280 and Dallas DS18B20.
 
-#define SKETCHNAME "TiNo2 receive.ino V2.6.1 07/04/2024"
+#define SKETCHNAME "TiNo2 receive.ino V2.6.2 08/01/2025"
 #define BUILD 11
 
 #include <Arduino.h>
@@ -770,9 +770,10 @@ void loop()
 
     if (MeasurementIntervall_ms > 0) // local measurement
     {
-        if ((millis() > last_measurement_millis) || event_triggered)
+        unsigned long now = millis();
+        if (((now - last_measurement_millis) > MeasurementIntervall_ms) || event_triggered)
         {
-            last_measurement_millis = millis() + MeasurementIntervall_ms;
+            last_measurement_millis = now;
 
             // measure temperature
             float temperature;
