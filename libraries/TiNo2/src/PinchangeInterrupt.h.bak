@@ -9,6 +9,7 @@ void wakeUp1_pci(void);
 void wakeUp2_pci(void);
 void wakeUp3_pci(void);
 
+
 #else
 #define register_pci(a,b,c,d) attachInterrupt(b,c,d)
 #endif
