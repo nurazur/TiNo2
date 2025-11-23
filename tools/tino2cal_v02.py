@@ -27,8 +27,8 @@ except:
 
 SerialPort = '/dev/ttyUSB_DUT'
 SerialBaud = 57600
-PassWord = b"TheQuickBrownFox"
-
+#PassWord = b"TheQuickBrownFox"
+PassWord = b"WiNW_AzurdelaMer"
 monitor_mode = False
 
 
@@ -172,18 +172,25 @@ def help():
     print("'x'             exit calibration mode and continue with loop()")
 
 
-sensors = ["HTU21D", "DS18B20", "BME280", "SHT3X", "MAX31865", "BRIGHTNESS", "SHTC3", "SHT4X"]
+
+
+
+
+
+
+
+
+
+sensors = ["I2C_0", "I2C_1", "I2C_2", "I2C_3", "I2C_4", "I2C_5", "I2C_6", "I2C_7", "DS18B20", "MAX6675", "MAX31855", "MAX31856", "MAX31865", "ADS1120", "BRIGHTNESS", "RESERVED"]
 sensors_val =0
 
 pciconfig=["TRIGGER","MODE"]
 pciconfig_val =[0,0,0,0]
 
-
-# 
 mem_s = "NODEIDB, NETWORKIDB, GATEWAYIDB, \
       VCCATCALi, VCCADC_CALi, \
       SENDDELAYi, \
-      SENSORCONFIGB, \
+      SENSORCONFIGi, \
       FREQ_CENTERf,\
       TXPOWERB, \
       RADIO_T_OFFSETb,\
@@ -194,8 +201,8 @@ mem_s = "NODEIDB, NETWORKIDB, GATEWAYIDB, \
       LDRPINb,\
       PIRDATAPINb,\
       PIRDEADTIMEi,\
-      RXPINb,\
-      RTDPOWERPIN,\
+      TCCSPINb,\
+      RTDPOWERPINb,\
       RTDCSPINb,\
       ONEWIREPOWERPINb,\
       ONEWIREDATAPINb,\
@@ -396,6 +403,7 @@ def write_eeprom(str2parse, serial):
                     else:
                         val =  int(items[2])
 
+                    '''
                     if set_sensors:
                         if (0 <= val) and (val <= 1):
                             i = sensors.index(thekey)
@@ -408,6 +416,7 @@ def write_eeprom(str2parse, serial):
                         else:
                             print("Error: bit setting can only be 0 or 1")
                         return
+                    '''        
                     if set_pciconfig:
                         #print("PCI Config: must be treated here")
                         #print(thekey)
@@ -454,6 +463,19 @@ def write_eeprom(str2parse, serial):
                     else:
                         val =  int(items[2])
 
+                    if set_sensors:
+                        if (0 <= val) and (val <= 1):
+                            i = sensors.index(thekey)
+                            # set Flag at position i to 0
+                            sensors_val = sensors_val & ~(1<<i)
+                            sensors_val |= (val<<i)
+                            outstr = b"wi,%i,%i\n" % (addr, sensors_val)
+                            print(outstr.decode())
+                            serial.write(outstr)
+                        else:
+                            print("Error: bit setting can only be 0 or 1")
+                        return
+                    
                     if addr >= 0 and addr < EEPROM_SIZE-1:
                         outstr = b"wi,%i,%i\n" % (addr, val)
                         print(outstr.decode())
@@ -664,13 +686,16 @@ def calculate_checksum(eeprom_list):
         cs ^= int(eeprom_list[i])
     return cs & 0xff
 
-
+'''
 def check_bit(value, position):
     if value & 1<<position:
         return 1
     else:
         return 0
+'''
 
+def check_bit(value, position):
+    return (value & (1<<position))>>position
 
 # eepromlist is the list of raw eeprom data
 # i is a particular index and must be in the dictionary
@@ -711,12 +736,14 @@ def parse_eeprom_list(eepromlist, i):
 
         elif t == 'B': # unsigned Byte
             outp = "%s=%i" %(mem[i], int(eepromlist[i]))
+            '''
             if "SENSORCONFIG" in mem[i]:
                 sensors_val = int(eepromlist[i])
                 outp = "%s=0x%X\n" % (mem[i], sensors_val)
                 for p in range(len(sensors)):
                     outp += ("SENSORCONFIG.%s=%i\n" % ( sensors[p], check_bit(sensors_val, p)))
-            elif "PCI" in mem[i] and "CONFIG" in mem[i]:
+            '''
+            if "PCI" in mem[i] and "CONFIG" in mem[i]:
                 pcinum = ord(mem[i][3])-ord('0')
                 if (pcinum >=0 and pcinum < 4):
                     pciconfig_val[pcinum] = int(eepromlist[i])
@@ -732,6 +759,13 @@ def parse_eeprom_list(eepromlist, i):
             else:
                 p =chr(int(eepromlist[i])) + chr(int(eepromlist[i+1]))
             outp = "%s=%i" % (mem[i], struct.unpack('h', p)[0])
+            
+            if "SENSORCONFIG" in mem[i]:
+                sensors_val = struct.unpack('h', p)[0]
+                outp = "%s=0x%X\n" % (mem[i], sensors_val)
+                for pos in range(len(sensors)):
+                    outp += ("SENSORCONFIG.%s=%i\n" % ( sensors[pos], check_bit(sensors_val, pos)))
+            
         elif t == 'f':
             if PY3:
                 p= bytearray()

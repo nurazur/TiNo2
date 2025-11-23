@@ -120,13 +120,13 @@ void print_flag(uint8_t flag, Stream* S)
 {
     if (flag &0x1)
     {
-        S->println("\r\nHeartBeat");
+        S->print("\r\nHeartBeat");
     }
 
     flag >>=1;
     if (flag)
     {
-        S->print("event: PCI");
+        S->print("\r\nEvent: PCI");
         for (int i=0; i<4; i++)
         {
             if (flag&0x1)
@@ -156,6 +156,17 @@ void print_init_result(bool result_pass, const char* sensor_str, HardwareSerial*
     }
 }
 
+
+void print_tino2_logo(HardwareSerial* S)
+{
+    S->println("  _______   _   _   _           ___");
+    S->println(" |__   __| (_) | \\ | |         |__ \\");
+    S->println("    | |     _  |  \\| |   ___      ) |");
+    S->println("    | |    | | | . ` |  / _ \\    / / ");
+    S->println("    | |    | | | |\\  | | (_) |  / /_");
+    S->println("    |_|    |_| |_| \\_|  \\___/  |____|");
+    S->println("    by nurazur\r\n");
+}
 
 /*********************/
 //#if DEBUG == 2

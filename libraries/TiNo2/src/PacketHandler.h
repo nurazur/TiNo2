@@ -34,26 +34,44 @@
 #include "datalinklayer.h"
 
 #define HTU21D_bm   (1<<0)
-#define DS18B20_bm  (1<<1)
-#define BME280_bm   (1<<2)
-#define SHT3X_bm    (1<<3)
-#define MAX31865_bm (1<<4)
-#define BRIGHTNESS_bm (1<<5)
-#define SHTC3_bm    (1<<6)
-#define SHT4X_bm    (1<<7)
+#define BME280_bm   (1<<1)
+#define SHT3X_bm    (1<<2)
+#define SHT3X_ALT_bm (1<<3)
+#define SHTC3_bm    (1<<4)
+#define SHT4X_bm    (1<<5)
+#define OPT3001_bm  (1<<6)
+#define EEPROM_bm   (1<<7)
+
+#define DS18B20_bm  (1<<8)
+#define MAX6675_bm  (1<<9)
+#define MAX31855_bm (1<<10)
+#define MAX31856_bm (1<<11)
+#define MAX31865_bm (1<<12)
+#define ADS1120_bm  (1<<13)
+#define BRIGHTNESS_bm (1<<14)
+
 
 typedef struct
 {
-    byte HTU21D:1;
-    byte DS18B20:1;
-    byte BME280:1;
-    byte SHT3X:1;
-    byte MAX31865:1;
-    byte BRIGHTNESS:1;
-    byte SHTC3:1;
-    byte SHT4X:1;
+    uint16_t HTU21D:1;   
+    uint16_t BME280:1;
+    uint16_t SHT3X:1;
+	uint16_t SHT3X_ALT:1; 
+    uint16_t SHTC3:1;
+    uint16_t SHT4X:1;
+	uint16_t OPT3001:1;
+	uint16_t EEPROM:1;
 
-} UseBits;
+	uint16_t DS18B20:1;
+    uint16_t MAX6675:1;
+    uint16_t MAX31855:1;
+    uint16_t MAX31856:1;
+	uint16_t MAX31865:1;
+    uint16_t ADS1120:1;
+    uint16_t BRIGHTNESS:1;
+    uint16_t RESERVED:1;
+
+    } UseBits;
 
 typedef struct
 {
@@ -69,7 +87,6 @@ class PacketHandler
 {
     public:
         UseBits use;
-
 
         PacketHandler (UseBits sensor_cfg)
         {

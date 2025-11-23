@@ -47,10 +47,11 @@
 #include "RFM69.h"
 
 /*****************************************************************************/
-/***  EEPROM Access  and device calibration / Configuration                ***/
+/***  EEPROM Access and device calibration / Configuration                 ***/
 /*****************************************************************************/
 #include "configuration.h" // configuration data structures
 #include "calibrate.h"     // configuration tool interface
+
 /*****************************************************************************/
 /***                  I2C Bus Tools                                        ***/
 /*****************************************************************************/

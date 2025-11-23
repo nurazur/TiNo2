@@ -37,7 +37,7 @@ Fits Build 7 and later
 
 #include <Arduino.h>
 
-#define EEPROMVERSIONNUMBER 9
+#define EEPROMVERSIONNUMBER 10
 #if (EEPROMVERSIONNUMBER == 7)
 typedef struct
 {
@@ -247,48 +247,50 @@ Configuration;
     uint16_t VccAtCalmV  =  1100;
     uint16_t AdcCalValue =  1023;
     uint16_t Senddelay =    2;
-    byte SensorConfig = 0x01;
+    //byte SensorConfig = 0x01;
+    uint16_t SensorConfig = 0x01;
     float frequency = 866.0;
     byte TxPower = 25;
     char radio_temp_offset=0; // the calibration value of the temp sensor in the radio in degC*10
     byte UseRadioFrequencyCompensation=0;
-    byte RequestAck =0;
+    byte RequestAck =0; // bit 1: 1 = do not ACK even if requested. 0 = ACK if requested
+                        // bit 2: gateway mode. Listen to any node, regardless which target address. ACK to nodeid==targetid only.
     byte LedCount = 3;
     byte LedPin = 19;
     char LdrPin = 12;
     char PirDataPin =9;
     uint16_t PirDeadTime=3;
     char TCCSPin;     // Thermocouple CS Pin
-    byte RTDPowerPin = 22;
+    byte RTDPowerPin = 22;  // this pin is shared with Thermocouple
     byte RTDCSPin = 11;
     byte OneWirePowerPin = 9;
     byte OneWireDataPin=10;
     char I2CPowerPin = 8;
 
-    char PCI0Pin=13;// 30
+    char PCI0Pin=13;
     byte PCI0Trigger:3; // Change/Falling/Rising = 4/2/3
     byte PCI0Mode:5; // 0= INPUT, 2 = INPUT_PULLUP
     byte PCI0Gatewayid =22;
 
-    char PCI1Pin=12; //33
+    char PCI1Pin=12; //33  // shared with PIR power
     byte PCI1Trigger:3;
     byte PCI1Mode:5; // 0= INPUT, 2 = INPUT_PULLUP
     byte PCI1Gatewayid =22;
 
-    char PCI2Pin=-1; //36
+    char PCI2Pin=-1;
     byte PCI2Trigger:3;
     byte PCI2Mode:5; // 0= INPUT, 2 = INPUT_PULLUP
     byte PCI2Gatewayid =22;
 
-    char PCI3Pin=-1;  //39
+    char PCI3Pin=-1;
     byte PCI3Trigger:3;
     byte PCI3Mode:5; // 0= INPUT, 2 = INPUT_PULLUP
     byte PCI3Gatewayid =22;
 
-    byte UseCrystalRtc=0; //42
+    byte UseCrystalRtc=0;
     byte EncryptionEnable=1;
     byte FecEnable =1;
-    byte InterleaverEnable =1;
+    byte InterleaverEnable =1; // don't need as FEC and Interleaver go together.
     byte EepromVersionNumber=EEPROMVERSIONNUMBER;
     uint16_t SoftwareversionNumber=0;
     byte TXGaussShaping =0;

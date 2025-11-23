@@ -40,9 +40,9 @@
 #define PITCTRL_H
 
 
-// select external 32768Hz clock or internal 1024 Hz clock
-#define USE_OSC32K 1
-#define USE_ULP32K 0
+// select clock
+#define USE_OSC32K 1  // kexternal 32768Hz clock
+#define USE_ULP32K 0  // internal 1024 Hz cloc
 #define PITCLOCKGEN USE_ULP32K
 
 
@@ -59,7 +59,7 @@ class PITControl
 
 
         uint8_t  pulse_port=0;
-        uint16_t pulse_duration=2;
+        uint16_t pulse_duration=0;
         uint8_t  pulse_port_default=0; // normally on or off
         uint32_t t_start; // for debug purposes only!
 

@@ -71,16 +71,20 @@ void PITControl::init(uint8_t ClockGen, uint8_t receiver)
 
     void PITControl::interrupthandler(void)
     {
-        RTC.PITINTFLAGS = RTC_PI_bm;              // clear interrupt flag
-        this->pulse_duration--;
-        if (this->pulse_duration == 0)
+        RTC.PITINTFLAGS = RTC_PI_bm;  // clear interrupt flag
+        
+        if(this->pulse_duration > 0)
         {
-            this->disable();
-            if(this->pulse_port >0)
+            this->pulse_duration--;
+            if (this->pulse_duration == 0)
             {
-                //pulse_port =0; // brauchts des?
-                digitalWrite(this->pulse_port, this->pulse_port_default);
-                //Serial.println(millis()-t_start); // for debug only
+                this->disable();
+                if(this->pulse_port > 0)
+                {
+                    //pulse_port =0; // brauchts des?
+                    digitalWrite(this->pulse_port, this->pulse_port_default);
+                    //Serial.println(millis()-t_start); // for debug only
+                }
             }
         }
     }

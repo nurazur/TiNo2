@@ -33,7 +33,7 @@
 #include <Arduino.h>
 #include "datalinklayer.h"
 #include <EEPROM.h>
-
+#define DEBUG 1
 myMAC::myMAC(GenericRadio &R, Configuration &C, uint8_t *K, Stream* S) : encryption_key(K), serial(S), radio(R), Cfg(C)
 {
 }
@@ -87,6 +87,39 @@ int16_t myMAC::radio_calc_temp_correction(int temp)
     serial->println();
     */
     return corr; // frequency-steps
+}
+
+
+bool myMAC::radio_receive_generic(bool blocking)
+{
+    bool done = false;
+    bool returncode = false;
+    
+    // invalidate rxpacket;
+    rxpacket.success= false;
+    rxpacket.errorcode= 0; // error: no packet received
+    rxpacket.numerrors = 0xffff;
+    
+    if(blocking)
+        do
+        {
+            done  = radio.receiveDone();
+        }
+        while (!done);
+    else
+        done  =  radio.receiveDone();
+    
+    if (done)
+    {
+        returncode =true;
+        rxpacket.success= true;
+        rxpacket.datalen = radio.DATALEN;
+        memcpy(rxpacket.payload, (const void*)radio.DATA, radio.DATALEN);
+        rxpacket.RSSI = (float)radio.RSSI/2.0; // radio.RSSI is an int and it is a negative number.
+        rxpacket.TEMP = (int8_t)radio.readTemperature(0);
+    }
+    
+    return returncode;
 }
 
 bool myMAC::radio_receive(bool blocking)
@@ -278,8 +311,8 @@ bool myMAC::radio_send(uint8_t *data, uint8_t datalen, uint8_t requestAck)
             {
                 ackreceived = true;
             }
-            serial->print("FEI: ");serial->print(ack_packet->fei);serial->println();
-            serial->print("RSSI: ");serial->print(ack_packet->RSSI);serial->println();
+            //serial->print("FEI: ");serial->print(ack_packet->fei);serial->println();
+            //serial->print("RSSI: ");serial->print(-ack_packet->RSSI/2.0);serial->println();
             serial->flush();
         }
         else

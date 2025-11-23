@@ -46,7 +46,7 @@ verzeichnis = ''
 tmp_verzeichnis = ''
 
 #list_of_nodes = [22,2,9, 7, 6, 78, 15, 17, 19, 23, 24, 25, 27, 28, 32, 60, 61,62,63,65,66,68,69, 143, 151, 155, 160, 188]
-list_of_nodes = [6,7,22]
+list_of_nodes = [2,3,4,7,15,22,32,33,40,130,131,143,160,161]
 
 ##########      Terminal Funktions - OS dependent       #########
 if os.name == 'nt': # windows OS
@@ -69,7 +69,30 @@ if os.name == 'nt': # windows OS
 
     def kbhit():
         return msvcrt.kbhit()
+    # Source - https://stackoverflow.com/a
+    # Posted by Eric Pruitt
+    # Retrieved 2025-11-07, License - CC BY-SA 2.5
 
+    import ctypes
+    class SYSTEMTIME(ctypes.Structure):
+        _fields_ = [
+            ('wYear', ctypes.c_int16),
+            ('wMonth', ctypes.c_int16),
+            ('wDayOfWeek', ctypes.c_int16),
+            ('wDay', ctypes.c_int16),
+            ('wHour', ctypes.c_int16),
+            ('wMinute', ctypes.c_int16),
+            ('wSecond', ctypes.c_int16),
+            ('wMilliseconds', ctypes.c_int16)]
+
+    def getLocalTime():
+        SystemTime = SYSTEMTIME()
+        lpSystemTime = ctypes.pointer(SystemTime)
+        ctypes.windll.kernel32.GetLocalTime(lpSystemTime)
+        return SystemTime
+        
+    weekdays=['Sun','Mon','Tue','Wed','Thu','Fri','Sat','Sun']
+        
 else:
     # switch to normal terminal
     def set_normal_term():
@@ -106,6 +129,7 @@ else:
         if not dr == []:
             return True
         return False
+
 
 
 #key must be a bytes array
@@ -157,9 +181,7 @@ os.environ['TZ'] = 'Europe/Paris'
 PY2 = (sys.version_info.major==2)
 PY3 = (sys.version_info.major==3)
 
-
-
-
+       
 #fill last_log_dict with existing entries
 fn = '%s%s' % (tmp_verzeichnis, last_log_filename)
 if os.path.exists(fn):
@@ -202,7 +224,14 @@ while (True):
     line = line_raw[:-2]
     #print line
     loctime = time.localtime(time.time())
-    zeit = time.strftime('%a,%d.%m.%Y,%H:%M:%S', loctime)
+    #zeit = time.strftime('%a,%d.%m.%Y,%H:%M:%S', loctime)
+    if os.name == 'nt': # windows OS
+        SysTime = getLocalTime()
+        zeit = "%s,%02i.%02i.%i,%02i:%02i:%02i" % (weekdays[SysTime.wDayOfWeek], \
+                                                   SysTime.wDay, SysTime.wMonth, SysTime.wYear, \
+                                                   SysTime.wHour, SysTime.wMinute, SysTime.wSecond)
+    else:
+        zeit = time.strftime('%a,%d.%m.%Y,%H:%M:%S', loctime)
     is_a_valid_packet = True
 
     node =b''
@@ -333,7 +362,7 @@ while (True):
             continue
 
 
-    if node is not '' and node is not b'':
+    if node != '' and node != b'':
         if int(node) > 0:
             print (res_str)
 

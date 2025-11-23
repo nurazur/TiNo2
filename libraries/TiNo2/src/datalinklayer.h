@@ -206,6 +206,7 @@ class myMAC {
         void radio_ook_transmit_begin(){radio.OOKTransmitBegin();}
         int16_t radio_calc_temp_correction(int temp);
         bool radio_receive(bool blocking=false);
+        bool radio_receive_generic(bool blocking=false);
         bool radio_send(Payload &tinytx, uint8_t requestAck=0);
         bool radio_send(uint8_t *data, uint8_t datalen, uint8_t requestAck=0);
         bool radio_send(uint8_t *data, uint8_t datalen, uint8_t requestAck, int16_t temperature);

@@ -38,7 +38,8 @@ Die Leiterplatten passen zu im Handel erhältlichen PVC Gehäusen, welche in etw
 - DS18B20 (beliebter Temperatursensor, da auch in wasserdichten Versionen verfügbar)
 - MAX31865 (PT100 Temperatur Sensor)
 - AM312 PIR Bewegungssensor
-- [](https://github.com/nurazur/TiNo2/blob/e5b521a594be324584e5fc79e4e9750f60dd1295/New_smaller.png) MAX6675, MAX31855K, MAX31856, ADS1120 ADC IC's für Thermoelemente
+- MAX6675, MAX31855K, MAX31856, ADS1120 ADC IC's für Thermoelemente
+- [](https://github.com/nurazur/TiNo2/blob/e5b521a594be324584e5fc79e4e9750f60dd1295/New_smaller.png) ADS1120 und ADS1220 ADC für PT100
 - LDR als Helligkeitssensor
 - I2C oder SPI basierte Sensoren leicht konfigurierbar
 - genug digitale GPIOs
@@ -60,8 +61,7 @@ Die Leiterplatten passen zu im Handel erhältlichen PVC Gehäusen, welche in etw
 - FEC (Forward Error Correction) und Interleaver
 
 ## Basisband
-- Microchip ATMega4808-au
-- ![](https://github.com/nurazur/TiNo2/blob/e5b521a594be324584e5fc79e4e9750f60dd1295/New_smaller.png) auch für Micropchip AVR64DD28 and AVR64DD28 MCU's
+- Microchip ATMega4808-au AVR64DD28 und AVR64DD28 MCU's
 - 48kByte Flash (64kByte Flash on AVR64DD)
 - Ruhestrom < 2uA
 - Ruhestrom ca. 1uA mit TPL5110 (extern)
@@ -74,8 +74,7 @@ Die Leiterplatten passen zu im Handel erhältlichen PVC Gehäusen, welche in etw
 ## System / Software
 - Open Source Software C++
 - Software kann einfach individuell angepasst werden
-- Programmierung mit Arduino IDE, und/oder
-- ![](https://github.com/nurazur/TiNo2/blob/e5b521a594be324584e5fc79e4e9750f60dd1295/New_smaller.png)Programmierung mit PLatformIO
+- Programmierung mit Arduino IDE (bis Version 2.6.1), und/oder mit PLatformIO
 - Konfiguration der Nodes über serielles Interface (FTDI Adapter)
 - Konfigurations- und Kalibrierdaten im EEPROM gespeichert (verschlüsselt)
 - Flashen
@@ -85,6 +84,7 @@ Die Leiterplatten passen zu im Handel erhältlichen PVC Gehäusen, welche in etw
 - [Interface zu IOBroker](https://github.com/bowao/ioBroker.tino/)
 
 # Installation mit der Arduino IDE
+Die Arduino IDE Installation wird von mir ab Version 2.7 nicht mehr unterstützt, aber ist prinzipiell möglich. Das TiNo2 Paket ab Version 2.7 ist nicht rückwärts kompatibel.
 Die gesamte Installation geht in 3 Schritten und benötigt nur einige Minuten. MegaCoreX ist der Kernel den man für den Atmega4808 braucht und der leider nicht in der Arduino IDE mitgeliefert wird.
 
 1. Installiere MegaCoreX

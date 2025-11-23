@@ -36,7 +36,7 @@ int8_t PacketHandler::calc_packettype(void)
         use.SHT4X =0;
     }
     */
-    this->extra_temperature_sensor = use.DS18B20 || use.MAX31865;
+    this->extra_temperature_sensor = use.DS18B20 || use.MAX31865 || use.ADS1120 || use.MAX31855 || use.MAX31856 || use.MAX6675;
     this->is_humidity_sensor = use.HTU21D | use.BME280 | use.SHT3X | use.SHTC3 | use.SHT4X;
 
     PacketType = -1;

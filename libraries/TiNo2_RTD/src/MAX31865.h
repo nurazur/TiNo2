@@ -37,6 +37,7 @@
 #define _MAX31865_H
 
 #include <stdint.h>
+#include "PT100_common.h"
 
 // define here false for 2 or 4 wires
 // true for 3 wires
@@ -73,20 +74,23 @@
 /* RTD data, RTD current, and measurement reference
    voltage. The ITS-90 standard is used; other RTDs
    may have coefficients defined by the DIN 43760 or
-   the U.S. Industrial (American) standard. */
+   the U.S. Industrial (American) standard. */ 
+/*
 #define RTD_A_ITS90         3.9080e-3
 #define RTD_A_USINDUSTRIAL  3.9692e-3
 #define RTD_A_DIN43760      3.9848e-3
 #define RTD_B_ITS90         -5.870e-7
 #define RTD_B_USINDUSTRIAL  -5.8495e-7
 #define RTD_B_DIN43760      -5.8019e-7
-/* RTD coefficient C is required only for temperatures
-   below 0 deg. C.  The selected RTD coefficient set
-   is specified below. */
+// RTD coefficient C is required only for temperatures
+//   below 0 deg. C.  The selected RTD coefficient set
+//   is specified below. 
 #define SELECT_RTD_HELPER(x) x
 #define SELECT_RTD(x) SELECT_RTD_HELPER(x)
 #define RTD_A         SELECT_RTD(RTD_A_ITS90)
 #define RTD_B         SELECT_RTD(RTD_B_ITS90)
+*/
+
 /*
  * The reference resistor on the hardware; see the MAX31865 datasheet
  * for details.  The values 400 and 4000 Ohm are recommended values for
