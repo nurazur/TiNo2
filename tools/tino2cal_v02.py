@@ -27,8 +27,7 @@ except:
 
 SerialPort = '/dev/ttyUSB_DUT'
 SerialBaud = 57600
-#PassWord = b"TheQuickBrownFox"
-PassWord = b"WiNW_AzurdelaMer"
+PassWord = b"TheQuickBrownFox"
 monitor_mode = False
 
 
