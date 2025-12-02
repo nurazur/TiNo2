@@ -93,7 +93,10 @@
 
 #include "RFM69registers.h"
 
-#define FILENAME "myTiNo2V7.ino V2.7.1 31/10/2025"
+//#define FILENAME "myTiNo2V7.ino V2.7.1 31/10/2025"
+
+// RTD bug fix
+#define FILENAME "myTiNo2V7.ino V2.7.2 01/12/2025"
 #define BUILD 11
 #define RADIO_SPI_PINSWAP 0
 
@@ -104,12 +107,12 @@
 /*****************************************************************************/
 // User Configuration has moved to user_config.h
 
-// PIT (Periodic Interrupt Timer) can be used in sender and receiver. However this 
+// PIT (Periodic Interrupt Timer) can be used in sender and receiver. However this
 // combined code // shares the PIT ISR for both the sleep period control (sender)
-// and the action Pulse control (receiver), making the ISR code conflicting in the 
+// and the action Pulse control (receiver), making the ISR code conflicting in the
 // sender case. So using the RTC is the standard for the sender.
 // Don't change the following #define!
-// 
+//
 // #define USE_PIT_FOR_SENDER
 
 
@@ -350,7 +353,7 @@ static bool BME280_Init(UseBits &enable, uint8_t i2c_address)
 	   BME280::SpiEnable_False,
 	   (BME280I2C::I2CAddr)i2c_address // 0x76 (default) or 0x77);
 		);
-		
+
         BME280 = new BME280I2C(settings);
         enable.BME280 = BME280->begin();
         print_init_result(enable.BME280, "BME280");
@@ -565,7 +568,7 @@ void initialize_pin_change_interrupts(Configuration Config)
 
 // on ATmega4808 only Pins Px2 and Px6 are fully asynchronuous, these are pins 10,14,18,22 (PC2, PD2, PD6, PF2)
 // Pin 14 is reserved for RFM69 Module
-// Thermocouple devices use Pin 18 for interrupts
+// Thermocouple and RTD devices use Pin 18 for interrupts
 // on AVR64DD32/28 all GPIOs are fully asynchronuous
 
     if (Config.PCI0Pin >=0)
@@ -602,13 +605,13 @@ void initialize_pin_change_interrupts(Configuration Config)
 // check I2C bus on address 0x45 or 0x44 if device is a OPT3001
 // OPT3001 has a manufacturer-ID at address 0x7E,  must read 0x5449
 bool is_opt3001(uint8_t address)
-{   
+{
     uint16_t deviceID;
     Wire.beginTransmission(address);
     Wire.write(0x7E);
     Wire.endTransmission(true);
     Wire.requestFrom(address, (size_t)2, true);
-    
+
     deviceID  = Wire.read() << 8;
     deviceID |= Wire.read();
     //Serial.print("deviceID: ");Serial.println(deviceID, HEX);
@@ -651,7 +654,7 @@ bool is_sht3x(uint8_t address)
     Wire.endTransmission();
     delay(10);
     Wire.requestFrom(address, (size_t)6, true);
-    
+
     if (Wire.available() != 6)
     {
         Wire.endTransmission(true);
@@ -662,8 +665,8 @@ bool is_sht3x(uint8_t address)
     {
         snum[i] = Wire.read();
     }
-    
-    
+
+
     crc = sht_crc8(snum, 2, 0xFF);
     Wire.endTransmission(true);
 
@@ -687,11 +690,11 @@ bool is_sht4x(uint8_t address)
     uint8_t crc1;
     Wire.beginTransmission(address);
     Wire.write((uint8_t)0x89);
-    
+
     Wire.endTransmission();
     delay(10);
     Wire.requestFrom(address, (size_t)6, true);
-    
+
     if (Wire.available() != 6)
     {
         Wire.endTransmission(true);
@@ -702,7 +705,7 @@ bool is_sht4x(uint8_t address)
     {
         snum[i] = Wire.read();
     }
-    
+
     crc = sht_crc8(snum, 2, 0xFF);
     crc1 = sht_crc8(&snum[3],2,0xFF);
     Wire.endTransmission(true);
@@ -728,7 +731,7 @@ void check_i2c_address(byte address, UseBits* devices)
             //  3 in this project possibly supported devices have address 44: OPT3001, SHT4x and SHT3x
             // Serial.println("SHT3x or SHT4x or ALT OPT3001");
             // try to identify a OPT3001
-            
+
             if (is_opt3001(address))
             {
                 Serial.println("OPT3001");
@@ -746,7 +749,7 @@ void check_i2c_address(byte address, UseBits* devices)
                 devices->SHT4X = 1;
             }
             break;
-       
+
         case 0x45:
             //Serial.println("OPT3001 or ALT SHT3x");
             // try to identify a OPT3001
@@ -775,7 +778,7 @@ void check_i2c_address(byte address, UseBits* devices)
                 Serial.println("identifying OPT3001 failed.");
             }
             break;
-            
+
         case 0x50:
             Serial.println("EEPROM");
             devices->EEPROM = 1;
@@ -805,7 +808,7 @@ void Scan4I2cDevices(UseBits* devices)
     Serial.println("Scan I2C Bus...");
 
     nDevices = 0;
-    for(address = 1; address < 127; address++) 
+    for(address = 1; address < 127; address++)
     {
         // The i2c_scanner uses the return value of
         // the Write.endTransmisstion to see if
@@ -814,17 +817,17 @@ void Scan4I2cDevices(UseBits* devices)
         Wire.beginTransmission(address);
         error = Wire.endTransmission();
 
-        if (error == 0) 
+        if (error == 0)
         {
           Serial.print("0x");
           if (address < 16)
               Serial.print("0");
           Serial.print(address, HEX);Serial.print(" ");
-          
+
           check_i2c_address(address, devices);
           nDevices++;
         }
-        else if (error == 4) 
+        else if (error == 4)
         {
           Serial.print("Unknown error at address 0x");
           if (address < 16)
@@ -832,7 +835,7 @@ void Scan4I2cDevices(UseBits* devices)
           Serial.print(address, HEX);Serial.print(" ");
         }
     }
-    
+
     if (nDevices == 0)
         Serial.println("No I2C devices found");
     else
@@ -852,14 +855,14 @@ void initialize_i2c_devices(UseBits* sensors)
 
     Wire.swap(0); // 0 is default, 1 is identical with 0, 3 has the same pins as UART0
     Wire.begin();
-	
+
 	Config.SensorConfig &= 0xFF00; // set all I2C devices to 0, we have now automatic scan
-	
+
 	Scan4I2cDevices(sensors);
-		
+
     if (sensors->BME280 && F_CPU > 1000000)
         Wire.setClock(50000);
-    
+
     if (sensors->SHTC3)
     {
         sensors->SHTC3 = SHT_Init(sensors->SHTC3, SHTC3, SHTSensor::SHTC3);
@@ -899,7 +902,7 @@ void initialize_1wire_devices(UseBits* sensors)
         mySerial->print("DS18B20 found: "); mySerial->println(num_ds18b20);
     }
     #else
-    (void) sensors ;   
+    (void) sensors ;
     #endif
 }
 
@@ -921,11 +924,15 @@ void initialize_thermocouple_devices(UseBits* sensors)
 {
     #ifdef TINO_MAX31865_H
     #if MAX31865_INTERRUPT
-    attachInterrupt(18, Pin18InteruptFunc, FALLING); // define interrupt on Pin 18, fully asynchronuous Pin (4808 only)
-    #endif
-    RTD_Init(sensors->MAX31865, Config.RTDPowerPin, Config.TCCSPin);
 	if (sensors->MAX31865)
+		attachInterrupt(18, Pin18InteruptFunc, FALLING); // define interrupt on Pin 18, fully asynchronuous Pin (4808 only)
+    #endif
+    RTD_Init(sensors->MAX31865, Config.RTDPowerPin, Config.RTDCSPin);
+	if (sensors->MAX31865)
+	{
 		mySerial->println("RTD (PT100) device MAX31865 initialized.");
+		RTD_Sleep(TiNo->use.MAX31865);
+	}
     #if DEBUG > 0
     #warning MAX31865 (RTD) Module included in this build
     #endif
@@ -942,7 +949,7 @@ void initialize_thermocouple_devices(UseBits* sensors)
     #endif
     #endif
 
-    
+
     #ifdef TINO_MAX31856_H
     if (sensors->MAX31856)
     {
@@ -988,7 +995,7 @@ void initialize_thermocouple_devices(UseBits* sensors)
 			#if DEBUG > 0
 			#warning ADS1x20 (K type Thermocouple) Module included in this build
 			#endif
-			
+
 		#elif defined ADS1x20_RTD
 		if(sensors->ADS1120)
 		{
@@ -996,20 +1003,19 @@ void initialize_thermocouple_devices(UseBits* sensors)
 			Serial.println("initialize ADS1x20 as PT100 ADC...");
 			print_parameter(RREF);
 			print_parameter(Config.RTDCSPin);
-			Serial.print("Config.TCCSPin: "); Serial.println((uint8_t)Config.TCCSPin);
 			print_parameter(ADS1120_DOSLEEP);
 			print_parameter(ADS1x20_TYPE);
 			#endif
-			
+
 			Rtd.enable = sensors->ADS1120;
 			if(Rtd.enable)
 				Rtd1120 = new RTD_1120(18, Config.RTDCSPin, ADS1120_DOSLEEP, RREF, ADS1x20_TYPE);
 			uint8_t rtd_error = 0;
-			
+
 			// todo: for unknown reason, the diagnostic and offset calibration don't work here.
 			// rtd_error |= Rtd1120->WireBreakDetection_4WireRtd();
 			// rtd_error |= Rtd1120->OffsetCalibration(Rtd);
-			
+
 			if (rtd_error)
 			{
 				Rtd.enable=0;
@@ -1019,18 +1025,18 @@ void initialize_thermocouple_devices(UseBits* sensors)
 			{
 				Serial.println("ADS1x20 initialized.");
 			}
-			
+
 			#if DEBUG > 0
 			uint8_t config_reg;
 			config_reg = Rtd1120->readRegister(CONFIG_REG0_ADDRESS);
 			Serial.print("CONFIG_REG0_ADDRESS: "); Serial.println(config_reg, HEX); // should be 0x05
-			
+
 			config_reg = Rtd1120->readRegister(CONFIG_REG1_ADDRESS);
 			Serial.print("CONFIG_REG1_ADDRESS: "); Serial.println(config_reg, HEX); // should be 0x60 (Data rate 175 SPS) or 0x00
-			
+
 			config_reg = Rtd1120->readRegister(CONFIG_REG2_ADDRESS);
 			Serial.print("CONFIG_REG2_ADDRESS: "); Serial.println(config_reg, HEX); // should be 0x66
-			
+
 			config_reg = Rtd1120->readRegister(CONFIG_REG3_ADDRESS);
 			Serial.print("CONFIG_REG3_ADDRESS: "); Serial.println(config_reg, HEX); // should be 0x80
 			#endif
@@ -1049,8 +1055,8 @@ void initialize_thermocouple_devices(UseBits* sensors)
 			sensors->ADS1120=0; // cannot use a ADS1120, module is not included in build
 		}
 		#endif
-		
-		
+
+
 	#endif
 }
 
@@ -1066,7 +1072,7 @@ ISR(RTC_CNT_vect)
 }
 
 
-void RTC_init(uint8_t use_crystal, uint16_t intervall_s) 
+void RTC_init(uint8_t use_crystal, uint16_t intervall_s)
 {
   if (!use_crystal)
   {
@@ -1090,12 +1096,9 @@ void RTC_init(uint8_t use_crystal, uint16_t intervall_s)
 /*********************/
 void sensor_loop(void);
 
-
-//uint32_t nexttime;
-
 void setup()
 {
-    /***                    ***/
+	/***                    ***/
     /*** disable all GPIO's ***/
     /***                    ***/
     for (uint8_t i = 6; i < 26; i++)
@@ -1132,31 +1135,31 @@ void setup()
 
     /***     BATTERY CALIBRATION VALUE    ***/
     Vcal_x_ADCcal = (long)Config.VccAtCalmV * Config.AdcCalValue;
-      
+
     /***     PIN CHANGE INTERRUPTS    ***/
     initialize_pin_change_interrupts(Config);
-    
+
     /***     INITIALIZE PIR SENSOR    ***/
     // it will be still for 3 cycles.
     // PIR shares the event flag with PCI1. PCI1 remains active, if specified.
     PIR.init();
-   
+
     sei();
-    
+
     pinMode(Config.LedPin, OUTPUT);
-    
+
     SensorData.PowerPin = Config.I2CPowerPin;
     SensorData.pressure = 0;
-    
+
     UseBits* sensors;
     sensors = (UseBits*)&Config.SensorConfig;
-    
+
     /***  INITIALIZE I2C DEVICES ***/
     initialize_i2c_devices(sensors);
 
     /***   INITIALIZE 1WIRE DEVICES   ***/
     initialize_1wire_devices(sensors);
-    
+
     /***   INITIALIZE ANALOG DEVICES   ***/
     initialize_analog_devices(sensors);
 
@@ -1173,7 +1176,7 @@ void setup()
         #endif
     mySerial->println ("Start Radio.");
     #endif
-    
+
     Mac.radio_begin(); // puts radio to sleep to save power.
 
     // for debug: this makes sure we can read from the radio.
@@ -1182,26 +1185,26 @@ void setup()
     byte version_raw = radio.readReg(0x10);
     mySerial->print ("Radio chip ver: "); mySerial->print(version_raw>>4, HEX); mySerial->print (" Radio Metal Mask ver: "); mySerial->print(version_raw&0xf, HEX); mySerial->println();
     #endif
-    #endif    
+    #endif
 
     // up to here rx and tx are identical.
-    /***********************************************************/  
+    /***********************************************************/
 
 /*** TX specific ***/
 
-    #if (IS_SENSOR_NODE) 
+    #if (IS_SENSOR_NODE)
     {
         // disable serial RX
         pinMode(1, INPUT_PULLUP);
         disablePinISC(1);
-        
+
         /* Turn off I2C devices */
         I2C_shutdown(Config.I2CPowerPin);
-		
+
         /* PACKET CALCULATOR */
         TiNo = new PacketHandler(*sensors);
         TiNo->pressure(0);
-        TiNo->brightness(0); 
+        TiNo->brightness(0);
         TiNo->nodeid(Config.Nodeid);
         TiNo->targetid(Config.Gatewayid);
         TiNo->humidity(0);
@@ -1211,21 +1214,20 @@ void setup()
         mySerial->print(", leng: "); mySerial->println(TiNo->PacketLen);
         #endif
 
-        
         #if defined USE_PIT_FOR_SENDER
         PIT.init(Config.UseCrystalRtc, 0);
         PIT.enable();
         if (Config.UseCrystalRtc) Config.Senddelay *= 8; // wake up from sleep period is 1s, so we need to multiply by 8.
         set_sleep_mode(SLEEP_MODE_PWR_DOWN);
         mySerial->println("USE PIT as wakeup counter");
-        
+
         #else // Use RTC
         Config.UseCrystalRtc ? PIT.RTC_setCrystal() : PIT.RTC_ULP32k_init(); // set clock to 32k
         RTC_init(Config.UseCrystalRtc, (Config.Senddelay&0x1FFF)*8 - 1); // assume 32.768 kHz clock. Maximum is 18h 12m
         set_sleep_mode(SLEEP_MODE_STANDBY); // cannot use PWR_DOWN mode withn RTC, only possible with PIT
         mySerial->println("USE RTC as wakeup counter");
         #endif
-           
+
         if (Config.UseCrystalRtc)
         {
             #if defined ARDUINO_avrdd
@@ -1239,12 +1241,12 @@ void setup()
         sei();
         // set watchdog_counter to have an initial transmission when starting the sender.
         watchdog_counter = Config.Senddelay+1;
-        
+
         mySerial->println("\n*******************");
         mySerial->println("*** SENSOR NODE ***");
         mySerial->println("*******************\n");
         mySerial->flush();
-		
+
         while(1)
         {
             sensor_loop();
@@ -1254,14 +1256,14 @@ void setup()
     }
     #endif
     /*** TX specific end ***/
-    
-    
+
+
     #if (IS_RECEIVER)
     {
         #if NUM_CHANNELS >1
         float frec[NUM_CHANNELS];
         #endif
-        
+
         mySerial->println("\n**************************");
         mySerial->println("* RECEIVER CONFIGURATION *");
         mySerial->println("**************************\n");
@@ -1269,7 +1271,7 @@ void setup()
         /*** PACKET CALCULATOR ***/
         TiNo = new PacketHandler(*sensors);
         TiNo->pressure(0);
-        TiNo->brightness(0); 
+        TiNo->brightness(0);
         TiNo->nodeid(Config.Nodeid);
         TiNo->targetid(Config.Gatewayid);
         TiNo->humidity(0);
@@ -1279,13 +1281,13 @@ void setup()
 
         /*** INITIALIZE PERIODIC INTERRUPT TIMER ***/
         // used to time the pulse of pulsed actions
-        PIT.init(Config.UseCrystalRtc);
+        PIT.init(Config.UseCrystalRtc); // decide between XO (external crystal) and ULPO
         PIT.disable();
-        
+
         /*** INITIALIZE RTC TIMER ***/
         // used to generate tick for internal measurements
         RTC_init(Config.UseCrystalRtc, (Config.Senddelay&0x1FFF)*8 - 1); // assume 32.768 kHz clock. Maximum is 18h 12m
-    
+
 
         if (Config.LedPin)
         {
@@ -1293,7 +1295,7 @@ void setup()
             delay(1000);
             digitalWrite(Config.LedPin, LOW);
         }
-        
+
         //nexttime = millis() + 20000;
     }
     #endif
@@ -1309,7 +1311,7 @@ uint8_t calculate_tx_flag()
     #else
     bool watchdog_expired = tick && (Config.Senddelay != 0);
     #endif
-    
+
     if (watchdog_expired)
     {
         watchdog_counter = 0;
@@ -1354,12 +1356,12 @@ float Measure(void)
 {
     float temperature=0;
     float t_internal =0; // the temperature we return must be a internal sensor.
-	
+
     // measure Battery Voltage
-	
+
 	mySerial->print("VCC: "); mySerial->print(getVcc(Vcal_x_ADCcal)); mySerial->println("mV");
 
-	#if (IS_SENSOR_NODE)	
+	#if (IS_SENSOR_NODE)
 		#ifdef USE_RADIO
 			TiNo->supplyV( Vcal_x_ADCcal / radio.vcc_dac);  // the VCC measured during last TX Burst.
 		#else
@@ -1439,6 +1441,11 @@ float Measure(void)
             success |= MAX31865_bm;
             TiNo->add_temp(encode_temp(temperature));
         }
+		else
+		{
+			 mySerial->println("RTD failure of measurement.");
+			 print_parameter(status);
+		}
     }
     #endif
 
@@ -1495,12 +1502,12 @@ float Measure(void)
         }
         else
         {
-            
+
         }
     }
     #endif
 
-    
+
     if(TiNo->use.MAX6675)
     {
 	#ifdef TINO_MAX6675_H
@@ -1519,7 +1526,7 @@ float Measure(void)
 		TiNo->use.MAX6675 = 0;
 	#endif
     }
-    
+
 
 	#if defined USE_ADS1120 || defined USE_ADS1220
 	#ifdef ADS1x20_THERMOCOUPLE
@@ -1544,7 +1551,7 @@ float Measure(void)
 		rtd_error |= Rtd1120->OffsetCalibration(Rtd);
 		rtd_error |= Rtd1120->Measure(Rtd, 1);
 		Serial.print("RTD_Temp: "); Serial.println(Rtd.temperature,3);
-		
+
 		if (rtd_error)
 		{
 			print_parameter(rtd_error);
@@ -1563,8 +1570,8 @@ float Measure(void)
 		print_parameter(Rtd.resistance);
 		#endif
 	}
-	
-	#endif	
+
+	#endif
     #endif
 
     #ifdef DS18B20_H
@@ -1622,13 +1629,14 @@ void sensor_loop()
 {
     static uint32_t total_count=0;
     float temperature;
-    
+
     #if defined MEGACOREX
     // detect false wakeup. this is a pci interrupt from a pin on the wrong edge. ATmega4808 only.
     if (event_triggered & 0x80)
     {
+		activityLed(1,30);
         event_triggered=0;
-        return; // start over, go sleep.
+        //return; // start over, go sleep. this is logically wrong as we need to check if watchdog expired at the the same event. This is a bug.
     }
     #endif
 
@@ -1664,9 +1672,7 @@ void sensor_loop()
     /*** carry out measurements according to configuration ***/
     SPI_MISO_Enable(RADIO_SPI_PINSWAP);
 	mySerial->print("start measure");mySerial->flush();
-    temperature = Measure();
-
-
+	temperature = Measure();
 
     #if defined BATTERYTEST
     if (!(total_count &0x1)) // even counts, we send 2 VCC's and 24 bit count
@@ -1704,7 +1710,11 @@ void sensor_loop()
             #endif
         //SPI.end();
         Reset_SPI(RADIO_SPI_PINSWAP);
+
+		//RTD IC needs to be powered, because shared SPI Bus interferes heavily with RF burst
+		#if defined USE_RTD_DEVICE
         digitalWrite(Config.RTDPowerPin, 1);
+		#endif
 
         if(Config.UseRadioFrequencyCompensation)
         {
@@ -1714,12 +1724,12 @@ void sensor_loop()
         {
             ackreceived = Mac.radio_send(TiNo->pData, TiNo->PacketLen, Config.RequestAck);
         }
-            #if DEBUG >0
-            mySerial->println("RFM burst sent.");
-            #endif
+		#if DEBUG >0
+		mySerial->println("RFM burst sent.");
+		#endif
         if (Config.RequestAck && Config.SerialEnable)
 		{
-            if (ackreceived) 
+            if (ackreceived)
 			{
 				mySerial->println("Ack received.");
 				mySerial->print("RSSI: ");    //
@@ -1740,13 +1750,15 @@ void sensor_loop()
 
     #endif
 
+
     #ifdef TINO_MAX31865_H
+	// power off the MAX31865
     RTD_Sleep(TiNo->use.MAX31865);
     #endif
 
     #ifdef TINO_MAX31855_H
-    // Power needs to be attached as long as we need to use SPI  
-    // so only here we can turn power of the mAX31855 off  
+    // Power needs to be attached as long as we need to use SPI
+    // so only here we can turn power of the mAX31855 off
     Thermocouple_Sleep_55(TiNo->use.MAX31855);
     #endif
 
@@ -1765,7 +1777,7 @@ void sensor_loop()
     // blink
     // Config.LedCount == 0 : never blink
     // Config.LedCount == 255: always blink
-    // Config.LedCount = x blink x rounds (typical x=3 is good for testing)
+    // Config.LedCount = blink x rounds (typical x=3 is good for testing)
     //
     if (Config.LedPin && Config.LedCount >0)
     {
@@ -1773,8 +1785,6 @@ void sensor_loop()
         blink(Config.LedPin,2); // blink LED
     }
 
-    //if (MAX31865_SPI_PINSWAP != RADIO_SPI_PINSWAP)
-    //        SPI_MISO_Disable(MAX31865_SPI_PINSWAP);
     SPI_MISO_Disable(RADIO_SPI_PINSWAP);
 
     #ifdef TINO_MAX31865_H
@@ -1782,7 +1792,6 @@ void sensor_loop()
     #endif
 
     #ifdef TINO_MAX31855_H
-    //pinMode(Config.RTDCSPin, INPUT);
     pinMode(MISO, INPUT);
     #endif
 
@@ -1801,7 +1810,7 @@ void sensor_loop()
 //dummy function, never used in sensor sketch
 void loop()
 {
-    
+
 }
 #endif
 
@@ -1826,7 +1835,7 @@ uint8_t print_packet0(uint8_t* payload, uint8_t payload_len)
 			mySerial->print("&p=");  mySerial->print(pl->pressure);
 			mySerial->print("&br=");  mySerial->print(pl->brightness);
 		}
-		
+
 		extract_interrupts(pl->flags); // ??
 		mySerial->flush();
 	}
@@ -1950,7 +1959,7 @@ uint8_t print_alterate_packets(uint8_t* payload)
 	{
 		success = 0;
 	}
-	
+
 	return success;
 }
 
@@ -1967,10 +1976,10 @@ void loop()
     {
         bool packet_is_valid = true;
         if (Mac.rxpacket.success && Mac.rxpacket.payload[NODEID] != 0) // only show good packets
-        {		
+        {
             // common for all formats
 			mySerial->print(Mac.rxpacket.payload[NODEID],DEC); mySerial->print(" ");
-			
+
 			if (print_packet0(Mac.rxpacket.payload, Mac.rxpacket.datalen)) // standard payload, len=8
 			{
 				//packet_is_valid = true;
@@ -1981,7 +1990,7 @@ void loop()
 			{}
 			else
 				packet_is_valid = false;
-			
+
             if (packet_is_valid)
             {
                 mySerial->print("&rssi=");    mySerial->print(int(Mac.rxpacket.RSSI*10));
@@ -2029,14 +2038,14 @@ void loop()
 		TiNo->nodeid(Config.Nodeid);
 		TiNo->flags(1);
 		TiNo->increment_count();
-		
+
 		/*
 		print_parameter(TiNo->pData[NODEID]);
 		print_parameter(TiNo->PacketLen);
 		print_hexparam (TiNo->pData[FLAGS]);
 		print_parameter(TiNo->PacketType);
 		*/
-		
+
 		mySerial->print(TiNo->pData[NODEID]); mySerial->print(" ");
 		if (print_packet0(TiNo->pData, TiNo->PacketLen)) // standard payload, len=8
 		{}

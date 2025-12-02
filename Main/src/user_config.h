@@ -14,7 +14,8 @@ Additionally, depending on hardware, externally used modules can be integrated
 
 // comment the following line if you don't want to encrypt RF message traffic
 // it is STRONGLY recommended to change de Key below to your own 16-Byte Password
-#define KEY   "TheQuickBrownFox"
+//#define KEY   "TheQuickBrownFox"
+#define KEY "WiNW_AzurdelaMer"
 #ifndef KEY
 #warning NO ENCRYPTION KEY DEFINED
 #define KEY NULL
@@ -113,7 +114,7 @@ Additionally, depending on hardware, externally used modules can be integrated
 /**********                    MAX31855 k-Type Thermocouple        **********/
 /****************************************************************************/
 // comment out the following line for use of a k-type Thermocouple with MAX31855  
-#define USE_MAX31855
+//#define USE_MAX31855
 
 
 /****************************************************************************/
@@ -130,7 +131,8 @@ Additionally, depending on hardware, externally used modules can be integrated
 //#define ADS1x20_THERMOCOUPLE
 
 // comment out the following line for connecting a PT100 to the ADS1x20
-#define ADS1x20_RTD
+//#define ADS1x20_RTD
+
 
 // comment out the following line for use of ADS1120 (16-bit ADC)
 #define USE_ADS1120
@@ -148,8 +150,14 @@ Additionally, depending on hardware, externally used modules can be integrated
 #define ADS1x20_TYPE 1
 #endif
 
+/****************************************************************************/
+#if defined USE_MAX31855 || defined USE_MAX31856 || defined USE_MAX6675 || defined ADS1x20_THERMOCOUPLE
+# define USE_THERMOCOUPLE_DEVICE
+#endif
 
-
+#if defined USE_MAX31865 || defined ADS1x20_RTD
+#define USE_RTD_DEVICE
+#endif 
 /****************************************************************************/
 /**********            FREQUECY HOPPING ON RECEIVER                **********/
 /****************************************************************************/
