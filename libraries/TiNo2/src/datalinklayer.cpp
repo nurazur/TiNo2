@@ -150,13 +150,11 @@ bool myMAC::radio_receive(bool blocking)
         if ((radio.DATALEN % 8 == 0) || (radio.DATALEN % 4 == 0 && !Cfg.FecEnable))
         {
             //byte datalen = radio.DATALEN;
-            if (Cfg.InterleaverEnable)
+            if (this->Cfg->FecEnable)
             {
-                interleave ((unsigned char*)radio.DATA, radio.DATALEN, REVERSE);
-            }
-
-            if (this->Cfg.FecEnable)
-            {
+				interleave ((unsigned char*)radio.DATA, radio.DATALEN, REVERSE);
+				assert(radio.DATALEN == rxpacket.datalen);
+				
                 rxpacket.datalen /=2;
                 if (this->coder.decode_block((unsigned char*)radio.DATA, (unsigned char*) &rxpacket.payload, rxpacket.datalen, rxpacket.numerrors))
                 {
@@ -258,21 +256,13 @@ bool myMAC::radio_send(uint8_t *data, uint8_t datalen, uint8_t requestAck)
     {
         unsigned char tinytx_fec[datalen*2];   // the encoded message
         this->coder.encode_block((unsigned char*) tinytx_encrypt, tinytx_fec, datalen); // add Forward Error Correction
-
-        //Interleave?
-        if (Cfg.InterleaverEnable)
-            interleave(tinytx_fec, sizeof (tinytx_fec)); // spread bits over the entire message to get over burst errors
-
+        interleave(tinytx_fec, sizeof (tinytx_fec)); // spread bits over the entire message to get over burst errors
         radio.send(tinytx_fec, sizeof (tinytx_fec)); // Cfg.Gatewayid not used by radio.Send!
     }
     // No FEC
     else
     {
-        //Interleave?
-        if (Cfg.InterleaverEnable)
-        {
-            interleave(tinytx_encrypt, datalen);
-        }
+        //Interleaver is useless in this context
         radio.send(tinytx_encrypt, datalen);
     }
 
