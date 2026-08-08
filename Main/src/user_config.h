@@ -13,9 +13,9 @@ Additionally, depending on hardware, externally used modules can be integrated
 //  - set the variable ENCRYPTION_ENABLE to 1 in the EEPROM, at runtime in Cfg.EncryptionEnable
 
 // comment the following line if you don't want to encrypt RF message traffic
-// it is STRONGLY recommended to change de Key below to your own 16-Byte Password
-//#define KEY   "TheQuickBrownFox"
-#define KEY "WiNW_AzurdelaMer"
+// it is STRONGLY recommended to change the Key below to your own 16-Byte Password
+#define KEY   "TheQuickBrownFox"
+
 #ifndef KEY
 #warning NO ENCRYPTION KEY DEFINED
 #define KEY NULL
@@ -90,7 +90,7 @@ Additionally, depending on hardware, externally used modules can be integrated
 // using DS18B20 is not recommended, the conversion time takes much longer
 // (700-900 ms) than with I2C based sensors (<50ms).
 
-#define USE_DS18B20
+//#define USE_DS18B20
 
 
 /****************************************************************************/
@@ -98,7 +98,7 @@ Additionally, depending on hardware, externally used modules can be integrated
 /****************************************************************************/
 // comment out the following line for use of a MAX31865 ADC with a PT100 or PT1000
 
-#define USE_MAX31865
+// #define USE_MAX31865
 
 
 /****************************************************************************/
@@ -135,7 +135,7 @@ Additionally, depending on hardware, externally used modules can be integrated
 
 
 // comment out the following line for use of ADS1120 (16-bit ADC)
-#define USE_ADS1120
+//#define USE_ADS1120
 
 // comment out the following line for use of ADS1220 (24-bit ADC)
 // #define USE_ADS1220
