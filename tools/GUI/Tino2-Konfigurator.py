@@ -20,7 +20,6 @@ import re
 from subprocess import Popen, PIPE, STDOUT, DEVNULL,CREATE_NO_WINDOW
 import os
 
-#PassWord = b"WiNW_AzurdelaMer"
 PassWord = b"TheQuickBrownFox"
 
 #EEPROM map
